@@ -231,7 +231,7 @@ public partial class MainWindow : Window
         root.Children.Add(CreateNotice(
             hasLiveApps ? "Verified package data" : "Preview data only",
             hasLiveApps
-                ? $"{liveApps.Length} package names were returned by BlueStacks ADB. App display names and icons have not yet been resolved."
+                ? $"{liveApps.Count} package names were returned by BlueStacks ADB. App display names and icons have not yet been resolved."
                 : "Connect to a discovered BlueStacks ADB endpoint from Settings to replace these sample cards with real package data."));
         return root;
     }
