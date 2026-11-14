@@ -17,6 +17,9 @@ public partial class MainWindow : Window
     private readonly WebsiteLogoService _websiteLogoService = new();
     private BlueStacksDiscoveryResult? _discoveryResult;
     private IReadOnlyList<string> _installedPackages = Array.Empty<string>();
+    private IReadOnlyList<string> _launchablePackages = Array.Empty<string>();
+    private bool _launchabilityDetectionAvailable;
+    private string? _launchabilityDetectionError;
     private string? _connectedDeviceSerial;
     private string? _adbError;
     private bool _isFullscreen;
@@ -73,6 +76,9 @@ public partial class MainWindow : Window
     {
         RuntimeStatusText.Text = "Scanning BlueStacks…";
         _installedPackages = Array.Empty<string>();
+        _launchablePackages = Array.Empty<string>();
+        _launchabilityDetectionAvailable = false;
+        _launchabilityDetectionError = null;
         _connectedDeviceSerial = null;
         _adbError = null;
         try
@@ -123,6 +129,9 @@ public partial class MainWindow : Window
         {
             _connectedDeviceSerial = null;
             _installedPackages = Array.Empty<string>();
+            _launchablePackages = Array.Empty<string>();
+            _launchabilityDetectionAvailable = false;
+            _launchabilityDetectionError = null;
             _adbError = scan.Error ?? "ADB connection failed for an unknown reason.";
             RuntimeStatusText.Text = "ADB connection failed";
         }
@@ -130,7 +139,12 @@ public partial class MainWindow : Window
         {
             _connectedDeviceSerial = scan.DeviceSerial;
             _installedPackages = scan.PackageNames;
-            RuntimeStatusText.Text = $"ADB connected · {_installedPackages.Count} packages";
+            _launchablePackages = scan.LaunchablePackageNames;
+            _launchabilityDetectionAvailable = scan.LaunchabilityDetectionAvailable;
+            _launchabilityDetectionError = scan.LaunchabilityDetectionError;
+            RuntimeStatusText.Text = scan.LaunchabilityDetectionAvailable
+                ? $"ADB connected · {_launchablePackages.Count} launchable apps"
+                : $"ADB connected · launch scan unavailable · {_installedPackages.Count} packages";
         }
 
         UpdateFeaturedMinecraftState();
@@ -543,7 +557,7 @@ public partial class MainWindow : Window
         var apps = hasLiveApps ? GetLiveApps().Take(6).ToArray() : SampleApps.Take(3).ToArray();
 
         HomeAppsLabel.Text = hasLiveApps
-            ? $"{_installedPackages.Count} INSTALLED PACKAGES"
+            ? $"{_launchablePackages.Count} LAUNCHABLE APPS"
             : "SAMPLE APPS";
 
         foreach (var app in apps)
@@ -552,12 +566,12 @@ public partial class MainWindow : Window
         HomeAppNotice.Text = hasLiveApps
             ? apps.Length == 0
                 ? "ADB is connected, but no packages were returned. Refresh the connection or check the Android runtime."
-                : $"Showing {apps.Length} of {_installedPackages.Count} packages returned by the connected BlueStacks instance."
+                : $"Showing {apps.Length} of {_launchablePackages.Count} launchable apps returned by BlueStacks."
             : "These are sample tiles, not verified installed apps. Connect BlueStacks ADB to load your actual library.";
     }
 
     private IReadOnlyList<AppEntry> GetLiveApps() =>
-        _installedPackages.Select(packageName =>
+        _launchablePackages.Select(packageName =>
         {
             if (KnownPackages.TryGetValue(packageName, out var known))
                 return new AppEntry(known.Name, known.Category, known.Description, IsVerified: true, PackageName: packageName);
@@ -573,7 +587,7 @@ public partial class MainWindow : Window
 
     private void UpdateFeaturedMinecraftState()
     {
-        var minecraftPackage = _installedPackages.FirstOrDefault(packageName =>
+        var minecraftPackage = _launchablePackages.FirstOrDefault(packageName =>
             string.Equals(packageName, "com.mojang.minecraftpe", StringComparison.OrdinalIgnoreCase));
 
         LaunchFeaturedButton.IsEnabled = minecraftPackage is not null;
@@ -743,7 +757,7 @@ public partial class MainWindow : Window
 
     private async Task LaunchPackageAsync(string packageName)
     {
-        if (!_installedPackages.Contains(packageName, StringComparer.OrdinalIgnoreCase))
+        if (!_launchablePackages.Contains(packageName, StringComparer.OrdinalIgnoreCase))
         {
             _adbError = "The selected package is no longer in the verified installed-package list. Refresh the library.";
             RuntimeStatusText.Text = "Package not verified";
