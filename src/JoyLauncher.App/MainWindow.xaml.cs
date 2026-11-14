@@ -165,7 +165,7 @@ public partial class MainWindow : Window
         var liveApps = _installedPackages
             .Select(packageName => new AppEntry(packageName, "Installed Android package", "Discovered from BlueStacks ADB", IsVerified: true))
             .ToArray();
-        var hasLiveApps = liveApps.Length > 0;
+        var hasLiveApps = _connectedDeviceSerial is not null;
         var catalogue = hasLiveApps ? liveApps : SampleApps;
 
         AddIntro(root, "Your apps", hasLiveApps
@@ -237,7 +237,7 @@ public partial class MainWindow : Window
         var root = CreatePageStack();
         AddIntro(root, "Search your apps", "Search the sample catalogue by app name or category.");
 
-        var searchCatalogue = _installedPackages.Count > 0
+        var searchCatalogue = _connectedDeviceSerial is not null
             ? _installedPackages.Select(packageName => new AppEntry(packageName, "Installed Android package", "Discovered from BlueStacks ADB", IsVerified: true)).ToArray()
             : SampleApps;
         var search = new TextBox
@@ -321,15 +321,19 @@ public partial class MainWindow : Window
             playerState,
             playerDetails));
 
-        var adbState = result is null
-            ? "NOT SCANNED"
-            : result.HasConfiguredAdbEndpoint
-                ? "CONFIGURATION FOUND · NOT CONNECTED"
-                : "NO CONFIGURED ENDPOINT FOUND";
-        var adbDetails = result?.AdbEndpoints.Count > 0
-            ? string.Join(Environment.NewLine, result.AdbEndpoints.Select(endpoint =>
-                $"{endpoint.InstanceName}: {endpoint.Host}:{endpoint.Port}"))
-            : "Enable Android Debug Bridge in BlueStacks Settings → Advanced, then refresh detection. The port is read from local configuration; no fixed port is assumed.";
+        var adbState = _connectedDeviceSerial is not null
+            ? "CONNECTED"
+            : result is null
+                ? "NOT SCANNED"
+                : result.HasConfiguredAdbEndpoint
+                    ? "CONFIGURATION FOUND · NOT CONNECTED"
+                    : "NO CONFIGURED ENDPOINT FOUND";
+        var adbDetails = _connectedDeviceSerial is not null
+            ? $"Verified ADB device: {_connectedDeviceSerial}"
+            : result?.AdbEndpoints.Count > 0
+                ? string.Join(Environment.NewLine, result.AdbEndpoints.Select(endpoint =>
+                    $"{endpoint.InstanceName}: {endpoint.Host}:{endpoint.Port}"))
+                : "Enable Android Debug Bridge in BlueStacks Settings → Advanced, then refresh detection. The port is read from local configuration; no fixed port is assumed.";
 
         root.Children.Add(CreateInfoCard(
             "ADB configuration",
@@ -387,9 +391,16 @@ public partial class MainWindow : Window
         root.Children.Add(refresh);
 
         root.Children.Add(CreateInfoCard(
+            "Installed package scan",
+            _connectedDeviceSerial is not null ? $"{_installedPackages.Count} PACKAGES FOUND" : "NOT SCANNED",
+            _connectedDeviceSerial is not null
+                ? "Package identifiers were returned by the connected BlueStacks instance. Friendly app names and icons still need to be resolved."
+                : "Connect to a detected endpoint to request the Android package list."));
+
+        root.Children.Add(CreateInfoCard(
             "Next integration step",
-            "NOT CONNECTED",
-            "After detection is verified, the next milestone will test the discovered endpoint with a time-limited ADB command, then list installed packages. No app is reported as installed or launchable before that succeeds."));
+            "PACKAGE METADATA",
+            "Resolve friendly app names and icons, classify apps, and add a verified Minecraft package match. The current launch buttons use package IDs returned by ADB."));
 
         root.Children.Add(CreateInfoCard(
             "Preferences",
