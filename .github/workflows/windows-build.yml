@@ -1,0 +1,21 @@
+name: Windows build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Build Release
+        run: dotnet build JoyLauncher.sln --configuration Release
