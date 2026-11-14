@@ -18,6 +18,9 @@ public partial class MainWindow : Window
     private IReadOnlyList<string> _installedPackages = Array.Empty<string>();
     private string? _connectedDeviceSerial;
     private string? _adbError;
+    private bool _isFullscreen;
+    private WindowStyle _previousWindowStyle;
+    private ResizeMode _previousResizeMode;
 
     private static readonly IReadOnlyList<AppEntry> SampleApps =
     [
@@ -659,6 +662,35 @@ public partial class MainWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.F11)
+        {
+            ToggleFullscreen();
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt))
+        {
+            var page = e.Key switch
+            {
+                Key.D1 or Key.NumPad1 => "Home",
+                Key.D2 or Key.NumPad2 => "Library",
+                Key.D3 or Key.NumPad3 => "Games",
+                Key.D4 or Key.NumPad4 => "Entertainment",
+                Key.D5 or Key.NumPad5 => "Search",
+                Key.D6 or Key.NumPad6 => "Store",
+                Key.D7 or Key.NumPad7 => "Settings",
+                _ => null
+            };
+
+            if (page is not null)
+            {
+                Navigation_Click(new Button { Tag = page }, new RoutedEventArgs());
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (e.Key == Key.Escape && DynamicPageContent.Visibility == Visibility.Visible)
         {
             Navigation_Click(new Button { Tag = "Home" }, new RoutedEventArgs());
@@ -666,11 +698,30 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (e.Key == Key.Escape && WindowState == WindowState.Maximized)
+        if (e.Key == Key.Escape && _isFullscreen)
         {
-            WindowState = WindowState.Normal;
+            ToggleFullscreen();
             e.Handled = true;
         }
+    }
+
+    private void ToggleFullscreen()
+    {
+        if (!_isFullscreen)
+        {
+            _previousWindowStyle = WindowStyle;
+            _previousResizeMode = ResizeMode;
+            WindowStyle = WindowStyle.None;
+            ResizeMode = ResizeMode.NoResize;
+            WindowState = WindowState.Maximized;
+            _isFullscreen = true;
+            return;
+        }
+
+        WindowStyle = _previousWindowStyle;
+        ResizeMode = _previousResizeMode;
+        WindowState = WindowState.Normal;
+        _isFullscreen = false;
     }
 
     private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
