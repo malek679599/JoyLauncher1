@@ -11,6 +11,7 @@ A Windows desktop launcher for BlueStacks 5, inspired by the clarity and control
 - Provide Home, Library, Games, Entertainment, Search, Store discovery, and Settings areas.
 - Use a dark navy visual system, restrained blue accents, readable typography, and purposeful motion.
 - Keyboard navigation comes first; gamepad navigation is planned.
+- F11 toggles fullscreen; Alt+1 through Alt+7 switch the main sections; Escape returns to Home and then exits fullscreen.
 - Keep preferences local and diagnostics clear.
 - Avoid paid APIs, subscriptions, proprietary paid assets, and unnecessary background services.
 
