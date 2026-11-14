@@ -48,7 +48,8 @@ Run #54 passed the Windows Release build and self-contained publish for the embe
 | Minecraft | Package ID is absent | Featured Minecraft action stays disabled and explains the requirement |
 | Launch | Launch a package returned by the live query | ADB launch command result is reported, then JoyLauncher attempts to attach the BlueStacks window |
 | Embedded play | Launch a game from a card with matching DPI-awareness contexts | BlueStacks player becomes a child of the JoyLauncher Play surface and fills its client area |
-| Embedded play | Launch when DPI-awareness contexts differ | JoyLauncher refuses SetParent before changing the BlueStacks window and reports both contexts and DPI values |\n| Embedded play | Click Back to JoyLauncher | Player detaches, and its original standalone styles, owner, and bounds are restored |
+| Embedded play | Launch when DPI-awareness contexts differ | JoyLauncher refuses SetParent before changing the BlueStacks window and reports both contexts and DPI values |
+| Embedded play | Click Back to JoyLauncher | Player detaches, and its original standalone styles, owner, and bounds are restored |
 | Embedded play | Press Escape while the launcher has focus | Returns to Home and restores the standalone player window |
 | Embedded play | Resize JoyLauncher or press F11 | Embedded child HWND resizes with the hosting surface; verify at the same and different monitor DPI scales |
 | Embedded play | Embedding is unavailable | Clear fallback text appears; Retry and Back remain usable |
@@ -73,11 +74,12 @@ Run #54 passed the Windows Release build and self-contained publish for the embe
 6. Select that instance's Connect action.
 7. Open Library and confirm package identifiers appear.
 8. Launch one known installed package from its verified card and confirm it opens in BlueStacks.
-9. Confirm the next candidate displays the BlueStacks player inside JoyLauncher, not only in a separate BlueStacks window.
-10. Click Back to JoyLauncher and confirm the standalone player window is restored.
-11. Resize JoyLauncher, press F11, and test keyboard/mouse input in the embedded game.
-12. Check that known publisher favicons load while online and initials remain when offline.
-13. Repeat with BlueStacks closed or ADB disabled and verify useful error states.
+9. Confirm the player becomes a child window inside JoyLauncher, not a separate overlay.
+10. Check Settings diagnostics for matching DPI-awareness contexts; if they differ, confirm JoyLauncher refuses attachment and leaves BlueStacks unchanged.
+11. Click Back to JoyLauncher and confirm the standalone player window is restored with its original style and size.
+12. Resize JoyLauncher, press F11, and test keyboard/mouse input in the embedded game.
+13. Check that known publisher favicons load while online and initials remain when offline.
+14. Repeat with BlueStacks closed or ADB disabled and verify useful error states.
 
 ## Evidence required
 

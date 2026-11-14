@@ -482,7 +482,7 @@ public partial class MainWindow : Window
 
         root.Children.Add(CreateInfoCard(
             "BlueStacks child-window hosting",
-            BlueStacksWindowHost.IsDocked ? "DOCKED" : PlayPage.Visibility == Visibility.Visible ? "NOT DOCKED" : "NOT ACTIVE",
+            BlueStacksWindowHost.IsDocked ? "EMBEDDED" : PlayPage.Visibility == Visibility.Visible ? "NOT EMBEDDED" : "NOT ACTIVE",
             "Mode: guarded cross-process child-window hosting. JoyLauncher compares Windows DPI-awareness contexts before calling SetParent, embeds only when the contexts match, and restores the original BlueStacks window when leaving Play." +
             Environment.NewLine +
             string.Join(Environment.NewLine, new[]
@@ -542,7 +542,7 @@ public partial class MainWindow : Window
             $"Launchability detection available: {_launchabilityDetectionAvailable}",
             $"Launchability detection detail: {_launchabilityDetectionError ?? "None"}",
             $"BlueStacks player embedded in Play area: {BlueStacksWindowHost.IsDocked}",
-            $"Docked player window handle: {(BlueStacksWindowHost.DockedWindowHandle == IntPtr.Zero ? "None" : $"0x{BlueStacksWindowHost.DockedWindowHandle.ToInt64():X}")}",
+            $"Embedded player window handle: {(BlueStacksWindowHost.DockedWindowHandle == IntPtr.Zero ? "None" : $"0x{BlueStacksWindowHost.DockedWindowHandle.ToInt64():X}")}",
             $"Player-window embedding detail: {_windowEmbeddingDiagnostic ?? "None"}",
             $"Window discovery detail: {_windowDiscoveryDiagnostic ?? "None"}",
             $"Play page visible: {PlayPage.Visibility == Visibility.Visible}",
@@ -850,7 +850,7 @@ public partial class MainWindow : Window
         PlayingAppTitle.Text = displayName;
         PlayingStatusText.Text = "Waiting for the BlueStacks player window…";
         PageTitle.Text = "Now playing";
-        PageSubtitle.Text = $"Running {displayName} in BlueStacks, docked over JoyLauncher’s Play area.";
+        PageSubtitle.Text = $"Attempting to run {displayName} in BlueStacks inside JoyLauncher’s Play area.";
         MainContentScrollViewer.Visibility = Visibility.Collapsed;
         PlayPage.Visibility = Visibility.Visible;
 
@@ -894,7 +894,7 @@ public partial class MainWindow : Window
         }
 
         _windowEmbeddingDiagnostic = attachError ??
-            "No dock attempt was possible because no matching BlueStacks player window was located.";
+            "No embedding attempt was possible because no matching BlueStacks player window was located.";
         _adbError = _windowEmbeddingDiagnostic;
         var detail = attachError ?? _windowDiscoveryDiagnostic ?? "No additional Windows window details are available.";
         PlayingStatusText.Text = $"Could not embed the BlueStacks player: {detail}";

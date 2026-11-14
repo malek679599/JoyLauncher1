@@ -18,7 +18,6 @@ public sealed class ExternalWindowHost : HwndHost
     private const int GwlExStyle = -20;
     private const int GwlHwndParent = -8;
     private const int GwOwner = 4;
-    private const uint GaParent = 1;
 
     private const long WsPopup = unchecked((long)0x80000000L);
     private const long WsChild = 0x40000000L;
@@ -140,11 +139,11 @@ public sealed class ExternalWindowHost : HwndHost
 
             if (!AreDpiAwarenessContextsEqual(playerDpiContext, hostDpiContext))
             {
-                var playerDpi = GetDpiForWindow(windowHandle);
-                var hostDpi = GetDpiForWindow(_hostHandle);
+                var targetDpiForDiagnostic = GetDpiForWindow(windowHandle);
+                var hostDpiForDiagnostic = GetDpiForWindow(_hostHandle);
                 return FailDocking(
-                    $"DPI-awareness mismatch: BlueStacks context 0x{playerDpiContext.ToInt64():X} at {playerDpi} DPI; " +
-                    $"JoyLauncher context 0x{hostDpiContext.ToInt64():X} at {hostDpi} DPI. " +
+                    $"DPI-awareness mismatch: BlueStacks context 0x{playerDpiContext.ToInt64():X} at {targetDpiForDiagnostic} DPI; " +
+                    $"JoyLauncher context 0x{hostDpiContext.ToInt64():X} at {hostDpiForDiagnostic} DPI. " +
                     "Windows can forcibly reset the BlueStacks process DPI mode during cross-process SetParent, " +
                     "so this build safely refused to embed it. BlueStacks was not re-parented.",
                     out error);
@@ -190,7 +189,7 @@ public sealed class ExternalWindowHost : HwndHost
             return FailDocking(resizeError, out error);
         }
 
-        var playerProcessId = GetWindowThreadProcessId(windowHandle, out var targetProcessId);
+        _ = GetWindowThreadProcessId(windowHandle, out var targetProcessId);
         var playerDpi = GetDpiForWindow(windowHandle);
         var hostDpi = GetDpiForWindow(_hostHandle);
         LastDockingDiagnostic =
