@@ -11,18 +11,18 @@
 
 | Check | Result | Evidence |
 |---|---|---|
-| Windows Release CI build | Passed | GitHub Actions run #19, commit `d4e9aa2` |
+| Windows Release CI build and self-contained publish | Passed | GitHub Actions run #42, commit `6b79504` |
 | WPF shell, navigation, Library and Search | Compiled in Windows CI | Commit `d4e9aa2` |
 | BlueStacks discovery and ADB configuration parsing | Compiled in Windows CI; local behavior unverified | `BlueStacksDiscoveryService.cs` |
 | ADB endpoint connection and package enumeration | Compiled in Windows CI; not yet tested against user's BlueStacks | `AdbClient.cs` |
 | Verified package launch request | Compiled in Windows CI; not yet tested against user's BlueStacks | `AdbClient.LaunchPackageAsync` |
-| Home and Library Figma composition | Created and visually reviewed | JoyLauncher Figma file |
+| Figma foundations and AppTile component | Created; full Home/Library composition incomplete | JoyLauncher Figma file |
 | Local Windows build | Not yet run | Requires target Windows machine |
 | Actual BlueStacks connection and app launch | Not yet verified | Requires local ADB-enabled instance |
 | Friendly app names and icons | Not implemented | Package IDs are shown for now |
 | Gamepad navigation | Not implemented | Planned |
 
-A later timeout-cleanup and documentation commit has its own CI run. Do not treat an earlier green run as proof that a later commit has passed.
+Run #42 is the latest confirmed green build for commit `6b79504`. The artifact `JoyLauncher-Windows-x64` is available from that run until 28 November 2026.
 
 ## Test matrix
 
