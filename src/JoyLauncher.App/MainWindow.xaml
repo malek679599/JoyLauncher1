@@ -113,20 +113,10 @@
 
                         <DockPanel Margin="0,28,0,13">
                             <TextBlock Text="Your library" FontSize="21" FontWeight="Bold"/>
-                            <TextBlock Text="SAMPLE APPS" DockPanel.Dock="Right" Foreground="{StaticResource SecondaryTextBrush}" FontSize="10" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="HomeAppsLabel" Text="SAMPLE APPS" DockPanel.Dock="Right" Foreground="{StaticResource SecondaryTextBrush}" FontSize="10" VerticalAlignment="Center"/>
                         </DockPanel>
-                        <UniformGrid Columns="3">
-                            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,12,0">
-                                <StackPanel><TextBlock Text="Minecraft" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Featured game · sample tile" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
-                            </Border>
-                            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,12,0">
-                                <StackPanel><TextBlock Text="YouTube" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Entertainment · sample tile" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
-                            </Border>
-                            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18">
-                                <StackPanel><TextBlock Text="YouTube Kids" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Entertainment · sample tile" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
-                            </Border>
-                        </UniformGrid>
-                        <TextBlock Text="These are sample tiles. The live library will be populated from BlueStacks after runtime discovery is implemented." TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" FontSize="11" Margin="0,12,0,0"/>
+                        <UniformGrid x:Name="HomeAppGrid" Columns="3"/>
+                        <TextBlock x:Name="HomeAppNotice" Text="These are sample tiles, not verified installed apps. Connect BlueStacks ADB to load your actual library." TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" FontSize="11" Margin="0,12,0,0"/>
                     </StackPanel>
                     <ContentControl x:Name="DynamicPageContent" Visibility="Collapsed"/>
                 </Grid>
