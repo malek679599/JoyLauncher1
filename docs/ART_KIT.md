@@ -4,13 +4,19 @@
 
 JoyLauncher should feel like a modern console interface: confident, calm, futuristic, and practical. Avoid copying Steam branding, logos, UI assets, or proprietary artwork. The reference is interaction clarity and console-style navigation, not a direct reproduction.
 
-## Brand assets to create
+## Created source assets
 
-- Primary JoyLauncher wordmark.
-- Compact JL monogram for the app icon.
-- Horizontal and square logo lockups.
+- `assets/brand/logo/joylauncher-mark.svg` — original JL mark.
+- `assets/backgrounds/hero/hero-block.svg` — original geometric block hero art.
+- `assets/manifest/ASSET_SOURCES.md` — provenance and usage rules.
+- WPF Home hero — editable geometric vector shapes.
+- Figma Home screen — editable hero block illustration, not a flattened screenshot.
+
+## Remaining brand assets
+
+- Primary JoyLauncher wordmark and complete logo lockups.
+- Windows ICO app icon in standard sizes.
 - Small navigation glyph set.
-- Featured hero background for the Home screen.
 - Neutral placeholder covers for apps without icons.
 - Empty-state illustration for an unpopulated library.
 
@@ -62,9 +68,9 @@ assets/
 
 ## Quality checklist
 
-- [ ] Original JoyLauncher identity; no Steam logo or copied wordmark.
+- [x] Original JoyLauncher identity; no Steam logo or copied wordmark.
 - [ ] Readable over both dark and bright portions of artwork.
 - [ ] Works in monochrome and at small sizes.
-- [ ] No unlicensed third-party art bundled.
-- [ ] Source files and asset provenance retained.
+- [x] No unlicensed third-party art bundled in the current asset set.
+- [x] Source files and asset provenance retained.
 - [ ] Image sizes optimized to avoid excessive memory/disk usage.
