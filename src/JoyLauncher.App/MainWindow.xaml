@@ -19,7 +19,7 @@
             <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Top" Margin="4,8,4,30">
                     <TextBlock Text="JOYLAUNCHER" FontSize="19" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="YOUR ANDROID HUB" FontSize="10" CharacterSpacing="180" Foreground="{StaticResource SecondaryTextBrush}" Margin="1,5,0,0"/>
+                    <TextBlock Text="YOUR ANDROID HUB" FontSize="10" Foreground="{StaticResource SecondaryTextBrush}" Margin="1,5,0,0"/>
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Bottom" Margin="4,18,4,4">
@@ -71,7 +71,7 @@
                                 <ColumnDefinition Width="0.8*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center" Grid.Column="0" MaxWidth="570">
-                                <TextBlock Text="FEATURED GAME" Foreground="#8DB8FF" FontSize="11" FontWeight="Bold" CharacterSpacing="150"/>
+                                <TextBlock Text="FEATURED GAME" Foreground="#8DB8FF" FontSize="11" FontWeight="Bold"/>
                                 <TextBlock Text="MINECRAFT" FontSize="42" FontWeight="ExtraBold" Margin="0,13,0,8"/>
                                 <TextBlock Text="Your world. Your next adventure. Launch your Android games and apps from one unified library." TextWrapping="Wrap" Foreground="#C4D2E6" FontSize="15" LineHeight="24" MaxWidth="520"/>
                                 <Button x:Name="LaunchFeaturedButton" Content="▶   Launch Minecraft" Background="{StaticResource AccentBrush}" Padding="20,13" Margin="0,22,0,0" Width="190" HorizontalAlignment="Left" Click="LaunchFeatured_Click"/>
