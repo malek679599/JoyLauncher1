@@ -74,7 +74,53 @@ public sealed class AdbClient
             .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        return AdbScanResult.Succeeded(serial, packageNames);
+        var launcherActivities = await RunAsync(
+            adbExecutable,
+            [
+                "-s", serial,
+                "shell", "cmd", "package", "query-activities",
+                "--components",
+                "-a", "android.intent.action.MAIN",
+                "-c", "android.intent.category.LAUNCHER"
+            ],
+            TimeSpan.FromSeconds(15),
+            cancellationToken);
+
+        var installedPackageSet = new HashSet<string>(
+            packageNames,
+            StringComparer.OrdinalIgnoreCase);
+
+        var launchablePackageNames = ParseLauncherPackageNames(
+            launcherActivities.StandardOutput,
+            installedPackageSet);
+
+        var launchabilityDetectionAvailable =
+            !launcherActivities.TimedOut &&
+            launcherActivities.ExitCode == 0 &&
+            (launchablePackageNames.Count > 0 ||
+             launcherActivities.StandardOutput.Contains(
+                 "No activities found",
+                 StringComparison.OrdinalIgnoreCase));
+
+        var launchabilityDetectionError = launchabilityDetectionAvailable
+            ? null
+            : launcherActivities.TimedOut
+                ? "Android launcher-activity discovery timed out. The full installed-package list is shown as a compatibility fallback."
+                : FormatError(
+                    "Android launcher-activity discovery is unavailable. The full installed-package list is shown as a compatibility fallback.",
+                    launcherActivities);
+
+        // Older Android package-manager shells may not support query-activities.
+        // Keep the library usable, but clearly mark launchability as unverified.
+        if (!launchabilityDetectionAvailable)
+            launchablePackageNames = packageNames;
+
+        return AdbScanResult.Succeeded(
+            serial,
+            packageNames,
+            launchablePackageNames,
+            launchabilityDetectionAvailable,
+            launchabilityDetectionError);
     }
 
     public async Task<AdbCommandResult> LaunchPackageAsync(
@@ -97,6 +143,36 @@ public sealed class AdbClient
             ["-s", deviceSerial, "shell", "monkey", "-p", packageName, "-c", "android.intent.category.LAUNCHER", "1"],
             TimeSpan.FromSeconds(15),
             cancellationToken);
+    }
+
+    private static IReadOnlyList<string> ParseLauncherPackageNames(
+        string output,
+        ISet<string> installedPackages)
+    {
+        var packages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var rawLine in output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = rawLine.Trim();
+
+            // Some package-manager builds wrap the flattened component in ComponentInfo{...}.
+            var openingBrace = line.IndexOf('{');
+            var closingBrace = line.LastIndexOf('}');
+            if (openingBrace >= 0 && closingBrace > openingBrace)
+                line = line[(openingBrace + 1)..closingBrace].Trim();
+
+            var separator = line.IndexOf('/');
+            if (separator <= 0)
+                continue;
+
+            var packageName = line[..separator].Trim();
+            if (IsValidPackageName(packageName) && installedPackages.Contains(packageName))
+                packages.Add(packageName);
+        }
+
+        return packages
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private static bool IsValidPackageName(string packageName)
@@ -238,11 +314,33 @@ public sealed record AdbScanResult(
     bool Success,
     string? DeviceSerial,
     IReadOnlyList<string> PackageNames,
+    IReadOnlyList<string> LaunchablePackageNames,
+    bool LaunchabilityDetectionAvailable,
+    string? LaunchabilityDetectionError,
     string? Error)
 {
-    public static AdbScanResult Succeeded(string serial, IReadOnlyList<string> packages) =>
-        new(true, serial, packages, null);
+    public static AdbScanResult Succeeded(
+        string serial,
+        IReadOnlyList<string> packages,
+        IReadOnlyList<string> launchablePackages,
+        bool launchabilityDetectionAvailable,
+        string? launchabilityDetectionError) =>
+        new(
+            true,
+            serial,
+            packages,
+            launchablePackages,
+            launchabilityDetectionAvailable,
+            launchabilityDetectionError,
+            null);
 
     public static AdbScanResult Failed(string error) =>
-        new(false, null, Array.Empty<string>(), error);
+        new(
+            false,
+            null,
+            Array.Empty<string>(),
+            Array.Empty<string>(),
+            false,
+            null,
+            error);
 }
