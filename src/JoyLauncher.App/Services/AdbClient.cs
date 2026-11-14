@@ -181,6 +181,16 @@ public sealed class AdbClient
                     // The process exited between the check and the kill.
                 }
 
+                try
+                {
+                    await process.WaitForExitAsync(CancellationToken.None);
+                    await Task.WhenAll(stdoutTask, stderrTask);
+                }
+                catch (InvalidOperationException)
+                {
+                    // The process may already have been disposed by the operating system.
+                }
+
                 if (cancellationToken.IsCancellationRequested)
                     throw;
 
