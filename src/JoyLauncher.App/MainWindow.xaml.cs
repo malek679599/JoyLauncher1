@@ -85,6 +85,7 @@ public partial class MainWindow : Window
             Margin = new Thickness(0, 10, 0, 18)
         };
         var grid = new WrapPanel();
+
         void Show(string category)
         {
             grid.Children.Clear();
@@ -135,6 +136,7 @@ public partial class MainWindow : Window
     {
         var root = CreatePageStack();
         AddIntro(root, "Search your apps", "Search the sample catalogue by app name or category.");
+
         var search = new TextBox
         {
             Height = 46,
@@ -148,22 +150,16 @@ public partial class MainWindow : Window
             ToolTip = "Search app names or categories"
         };
         var results = new WrapPanel();
-        void UpdateResults()
+        var noResults = new TextBlock
         {
-            results.Children.Clear();
-            var query = search.Text.Trim();
-            var matches = SampleApps.Where(app =>
-                app.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                app.Category.Contains(query, StringComparison.OrdinalIgnoreCase));
+            Text = "No matching sample apps. Try another name or category.",
+            FontSize = 12,
+            Foreground = (Brush)FindResource("SecondaryTextBrush"),
+            Visibility = Visibility.Collapsed,
+            Margin = new Thickness(0, 8, 0, 0)
+        };
 
-            foreach (var app in matches)
-                results.Children.Add(CreateAppCard(app));
-
-            if (results.Children.Count == 0)
-                root.Children.Add(CreateNotice("No matching sample apps", "Try another name or category."));
-        }
-
-        search.TextChanged += (_, _) =>
+        void UpdateResults()
         {
             results.Children.Clear();
             var query = search.Text.Trim();
@@ -171,12 +167,20 @@ public partial class MainWindow : Window
                          app.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                          app.Category.Contains(query, StringComparison.OrdinalIgnoreCase)))
                 results.Children.Add(CreateAppCard(app));
-        };
 
+            noResults.Visibility = results.Children.Count == 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        search.TextChanged += (_, _) => UpdateResults();
         root.Children.Add(search);
         root.Children.Add(results);
+        root.Children.Add(noResults);
         UpdateResults();
-        root.Children.Add(CreateNotice("Search scope", "Search currently covers preview entries only. Live results require BlueStacks package discovery."));
+        root.Children.Add(CreateNotice(
+            "Search scope",
+            "Search currently covers preview entries only. Live results require BlueStacks package discovery."));
         return root;
     }
 
@@ -241,7 +245,7 @@ public partial class MainWindow : Window
             Text = subtitle,
             FontSize = 12,
             TextWrapping = TextWrapping.Wrap,
-            Foreground = (Brush)Application.Current.FindResource("SecondaryTextBrush"),
+            Foreground = (Brush)Application.Current.Resources["SecondaryTextBrush"],
             Margin = new Thickness(0, 0, 0, 14)
         });
     }
