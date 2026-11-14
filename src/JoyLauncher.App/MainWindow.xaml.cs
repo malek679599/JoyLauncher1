@@ -450,6 +450,21 @@ public partial class MainWindow : Window
             Margin = new Thickness(0, 10, 0, 0)
         });
 
+        if (app.IsVerified)
+        {
+            var launchButton = new Button
+            {
+                Content = "Launch app",
+                Tag = app.Name,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Padding = new Thickness(12, 7, 12, 7),
+                Margin = new Thickness(0, 12, 0, 0),
+                Background = (Brush)FindResource("AccentSoftBrush")
+            };
+            launchButton.Click += LaunchVerifiedPackage_Click;
+            content.Children.Add(launchButton);
+        }
+
         return new Border
         {
             Width = 208,
@@ -512,11 +527,51 @@ public partial class MainWindow : Window
         };
     }
 
+    private async void LaunchVerifiedPackage_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string packageName } ||
+            !_installedPackages.Contains(packageName, StringComparer.OrdinalIgnoreCase))
+            return;
+
+        var adbPath = _discoveryResult?.AdbPath;
+        if (string.IsNullOrWhiteSpace(adbPath) || string.IsNullOrWhiteSpace(_connectedDeviceSerial))
+        {
+            _adbError = "Connect to a verified BlueStacks ADB device before launching an app.";
+            RuntimeStatusText.Text = "ADB device not connected";
+            return;
+        }
+
+        RuntimeStatusText.Text = $"Sending launch request for {packageName}…";
+        var result = await _adbClient.LaunchPackageAsync(adbPath, _connectedDeviceSerial, packageName);
+
+        if (result.TimedOut)
+        {
+            _adbError = $"Launch request timed out for {packageName}.";
+            RuntimeStatusText.Text = "Launch timed out";
+        }
+        else if (result.ExitCode == 0 &&
+                 !result.StandardOutput.Contains("No activities found", StringComparison.OrdinalIgnoreCase) &&
+                 !result.StandardError.Contains("No activities found", StringComparison.OrdinalIgnoreCase))
+        {
+            _adbError = null;
+            RuntimeStatusText.Text = $"ADB launch request accepted · {packageName}";
+        }
+        else
+        {
+            _adbError = string.IsNullOrWhiteSpace(result.StandardError)
+                ? result.StandardOutput.Trim()
+                : result.StandardError.Trim();
+            if (string.IsNullOrWhiteSpace(_adbError))
+                _adbError = $"BlueStacks did not accept the launch request for {packageName}.";
+            RuntimeStatusText.Text = "Launch request failed";
+        }
+    }
+
     private void LaunchFeatured_Click(object sender, RoutedEventArgs e)
     {
         MessageBox.Show(
-            "BlueStacks app discovery and launch integration are not implemented yet. The button is intentionally non-launching in this prototype.",
-            "Runtime integration pending",
+            "Minecraft has not yet been matched to a verified package in this BlueStacks instance. Connect ADB, open Library, and launch a verified package from there.",
+            "Minecraft package matching pending",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }
