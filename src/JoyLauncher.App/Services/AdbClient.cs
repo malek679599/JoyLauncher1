@@ -77,6 +77,37 @@ public sealed class AdbClient
         return AdbScanResult.Succeeded(serial, packageNames);
     }
 
+    public async Task<AdbCommandResult> LaunchPackageAsync(
+        string adbExecutable,
+        string deviceSerial,
+        string packageName,
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(adbExecutable))
+            return AdbCommandResult.Failed("The discovered ADB executable no longer exists.");
+
+        if (string.IsNullOrWhiteSpace(deviceSerial))
+            return AdbCommandResult.Failed("No verified ADB device is selected.");
+
+        if (!IsValidPackageName(packageName))
+            return AdbCommandResult.Failed("The selected package name is not valid.");
+
+        return await RunAsync(
+            adbExecutable,
+            ["-s", deviceSerial, "shell", "monkey", "-p", packageName, "-c", "android.intent.category.LAUNCHER", "1"],
+            TimeSpan.FromSeconds(15),
+            cancellationToken);
+    }
+
+    private static bool IsValidPackageName(string packageName)
+    {
+        var segments = packageName.Split('.');
+        return segments.Length >= 2 &&
+               segments.All(segment =>
+                   segment.Length > 0 &&
+                   segment.All(character => char.IsLetterOrDigit(character) || character == '_'));
+    }
+
     private static string? FindReadyDeviceSerial(string output, string expectedAddress)
     {
         foreach (var line in output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
