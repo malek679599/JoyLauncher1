@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <defs>
+    <linearGradient id="backdrop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#10213B"/>
+      <stop offset="1" stop-color="#07101E"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#315B8C" stop-opacity=".65"/>
+      <stop offset="1" stop-color="#315B8C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="960" height="540" rx="28" fill="url(#backdrop)"/>
+  <circle cx="690" cy="260" r="235" fill="url(#glow)"/>
+  <circle cx="690" cy="260" r="190" fill="none" stroke="#4771A4" stroke-opacity=".45" stroke-width="3"/>
+  <circle cx="690" cy="260" r="135" fill="none" stroke="#4771A4" stroke-opacity=".32" stroke-width="3"/>
+  <g transform="translate(560 120)">
+    <polygon points="130,12 248,78 130,144 12,78" fill="#78B98C"/>
+    <polygon points="12,78 130,144 130,280 12,214" fill="#367A56"/>
+    <polygon points="130,144 248,78 248,214 130,280" fill="#245B41"/>
+    <polygon points="34,82 72,103 72,137 34,116" fill="#9BCFA7" opacity=".85"/>
+    <polygon points="93,114 118,128 118,162 93,148" fill="#286849"/>
+    <polygon points="158,63 196,42 196,77 158,98" fill="#3B805A"/>
+    <polygon points="167,167 214,141 214,181 167,207" fill="#1B4937"/>
+    <polygon points="34,166 77,190 77,226 34,202" fill="#4B9467"/>
+    <polygon points="99,210 120,222 120,255 99,243" fill="#2A6748"/>
+  </g>
+  <g fill="#5C92D0" opacity=".7">
+    <rect x="835" y="115" width="20" height="20" rx="6"/>
+    <rect x="865" y="151" width="13" height="13" rx="4"/>
+    <rect x="825" y="385" width="11" height="11" rx="3"/>
+  </g>
+</svg>
