@@ -215,7 +215,9 @@ public partial class MainWindow : Window
         var catalogue = hasLiveApps ? liveApps : SampleApps;
 
         AddIntro(root, "Your apps", hasLiveApps
-            ? $"Live package list from {_connectedDeviceSerial}. Friendly app names and icons are a later metadata step."
+            ? _launchabilityDetectionAvailable
+                ? $"Launchable apps from {_connectedDeviceSerial}. Packages without a MAIN/LAUNCHER activity are filtered out."
+                : $"Installed packages from {_connectedDeviceSerial}. Launcher-activity discovery is unavailable, so this is a compatibility fallback."
             : "These preview entries demonstrate the layout. They are not yet verified as installed.");
 
         var filters = new StackPanel
@@ -254,7 +256,9 @@ public partial class MainWindow : Window
         root.Children.Add(CreateNotice(
             hasLiveApps ? "Verified package data" : "Preview data only",
             hasLiveApps
-                ? $"{liveApps.Count} package names were returned by BlueStacks ADB. App display names and icons have not yet been resolved."
+                ? _launchabilityDetectionAvailable
+                    ? $"{liveApps.Count} apps have a verified Android MAIN/LAUNCHER activity."
+                    : $"{liveApps.Count} package entries are shown because launcher-activity discovery is unavailable."
                 : "Connect to a discovered BlueStacks ADB endpoint from Settings to replace these sample cards with real package data."));
         return root;
     }
@@ -267,7 +271,7 @@ public partial class MainWindow : Window
             ? GetLiveApps().Where(app => app.Category == category).ToArray()
             : SampleApps.Where(app => app.Category == category).ToArray();
         AddIntro(root, title, hasLiveApps
-            ? $"{apps.Length} matching apps from the connected BlueStacks instance."
+            ? $"{apps.Length} matching launchable apps from the connected BlueStacks instance."
             : description);
         var grid = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
         foreach (var app in apps)
@@ -454,8 +458,21 @@ public partial class MainWindow : Window
             "Installed package scan",
             _connectedDeviceSerial is not null ? $"{_installedPackages.Count} PACKAGES FOUND" : "NOT SCANNED",
             _connectedDeviceSerial is not null
-                ? "Package identifiers were returned by the connected BlueStacks instance. Friendly app names and icons still need to be resolved."
+                ? "All installed package identifiers returned by Android Package Manager."
                 : "Connect to a detected endpoint to request the Android package list."));
+
+        root.Children.Add(CreateInfoCard(
+            "Launchable app scan",
+            _connectedDeviceSerial is null
+                ? "NOT SCANNED"
+                : _launchabilityDetectionAvailable
+                    ? $"{_launchablePackages.Count} LAUNCHABLE APPS VERIFIED"
+                    : "COMPATIBILITY FALLBACK · NOT VERIFIED",
+            _connectedDeviceSerial is null
+                ? "The launcher checks Android MAIN/LAUNCHER activities after connecting."
+                : _launchabilityDetectionAvailable
+                    ? "Only packages with a normal launcher activity appear as app cards."
+                    : _launchabilityDetectionError ?? "Android launcher-activity discovery is unavailable. Installed packages are shown as a fallback."));
 
         root.Children.Add(CreateInfoCard(
             "Next integration step",
@@ -504,6 +521,9 @@ public partial class MainWindow : Window
             endpoints,
             $"Connected device: {_connectedDeviceSerial ?? "Not connected"}",
             $"Installed package count: {_installedPackages.Count}",
+            $"Launchable app count: {_launchablePackages.Count}",
+            $"Launchability detection available: {_launchabilityDetectionAvailable}",
+            $"Launchability detection detail: {_launchabilityDetectionError ?? "None"}",
             $"BlueStacks window embedded in JoyLauncher: {BlueStacksWindowHost.IsAttached}",
             $"Play page visible: {PlayPage.Visibility == Visibility.Visible}",
             $"Latest ADB error: {_adbError ?? "None"}"
@@ -565,7 +585,9 @@ public partial class MainWindow : Window
 
         HomeAppNotice.Text = hasLiveApps
             ? apps.Length == 0
-                ? "ADB is connected, but no packages were returned. Refresh the connection or check the Android runtime."
+                ? _launchabilityDetectionAvailable
+                    ? "Android reported no apps with a normal launcher activity."
+                    : "ADB is connected, but no packages were returned. Refresh the connection or check the Android runtime."
                 : $"Showing {apps.Length} of {_launchablePackages.Count} launchable apps returned by BlueStacks."
             : "These are sample tiles, not verified installed apps. Connect BlueStacks ADB to load your actual library.";
     }
