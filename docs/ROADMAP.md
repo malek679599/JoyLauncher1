@@ -29,26 +29,31 @@
 - [ ] Transfer and reconcile the approved Figma design into WPF styles.
 
 ## Phase 3 — BlueStacks integration
-- [ ] Detect BlueStacks installation candidates.
-- [ ] Detect ADB and runtime endpoint without fixed-port assumptions.
+- [x] Detect BlueStacks installation candidates from process, registry, and install-directory evidence.
+- [x] Find the bundled ADB executable when present.
+- [x] Read per-instance ADB endpoint configuration without a fixed-port assumption.
+- [x] Show detected, configured, connected, and failed states separately.
+- [x] Connect to a selected endpoint and list verified Android package identifiers.
+- [x] Add launch requests for packages returned by the live ADB query.
+- [x] Add bounded ADB command timeouts and process cleanup.
 - [ ] Add user-configurable fallback paths.
-- [ ] Show accurate runtime connection states.
-- [ ] List installed packages and normalize app metadata where possible.
-- [ ] Launch selected Android apps.
-- [ ] Handle disconnected runtime, missing packages, and command timeouts.
+- [ ] Test discovery and ADB connection against the user's BlueStacks installation.
+- [ ] Resolve friendly app names, icons, and category metadata.
 
 ## Phase 4 — Library experience
 - [x] Build preview app cards, category filters, and sample search.
-- [ ] Replace preview data with verified installed-package discovery.
+- [x] Populate the Library with package identifiers after a successful ADB package query.
+- [x] Allow launch requests only for verified package identifiers.
+- [ ] Resolve friendly app names and icons.
 - [ ] Search, sort, pin, favourite, and filter discovered apps.
 - [ ] Add recent-app tracking where reliable.
-- [ ] Feature Minecraft without restricting the launcher to Minecraft.
-- [ ] Add app details and verified launch status.
+- [ ] Match Minecraft to the correct verified package without relying on an unverified guess.
+- [ ] Add app details and runtime launch feedback.
 
 ## Phase 5 — Quality and release
 - [x] Add a Windows GitHub Actions Release build workflow.
-- [x] Verify one Windows CI Release build succeeded at commit `09e9634`.
-- [ ] Confirm the latest search/resource polish and README commits also pass CI.
+- [x] Verify Windows CI Release builds succeeded through commit `d4e9aa2` (run #19).
+- [ ] Confirm later timeout-cleanup and documentation commits also pass CI.
 - [ ] Run a Release build on the user's Windows machine.
 - [ ] Test against the user's installed BlueStacks 5.
 - [ ] Test keyboard navigation and failure recovery.
@@ -67,7 +72,7 @@
 
 ## Current boundaries
 
-- The app tiles in the current WPF prototype are sample data, not proof of installed apps.
-- The Launch Minecraft button intentionally does not launch yet.
-- BlueStacks process detection, ADB discovery, package enumeration, and app launching are not implemented.
+- Home sample tiles are demonstration data; the Library switches to verified package identifiers only after a successful ADB query.
+- The featured Minecraft Home button remains a placeholder until Minecraft is matched to a verified package.
+- BlueStacks discovery and ADB package/launch code are implemented but still require local BlueStacks validation.
 - Figma Starter currently limits this workspace to three pages and has reached its Figma MCP call allowance for this session. Home and Library screens, Components, and Foundations are preserved; a separate Settings screen remains a later design task.
