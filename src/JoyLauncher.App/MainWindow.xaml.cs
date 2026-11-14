@@ -483,6 +483,8 @@ public partial class MainWindow : Window
         root.Children.Add(CreateInfoCard(
             "BlueStacks Play-area docking",
             BlueStacksWindowHost.IsDocked ? "DOCKED" : PlayPage.Visibility == Visibility.Visible ? "NOT DOCKED" : "NOT ACTIVE",
+            "Mode: borderless top-level window docking. BlueStacks stays in its own process; JoyLauncher does not re-parent its HWND. The player is positioned over the Play viewport and tracks launcher movement and resizing." +
+            Environment.NewLine +
             string.Join(Environment.NewLine, new[]
             {
                 _windowEmbeddingDiagnostic ?? "No player-window docking attempt has been recorded in this session.",
@@ -872,7 +874,7 @@ public partial class MainWindow : Window
 
             if (playerWindow != IntPtr.Zero)
             {
-                PlayingStatusText.Text = "BlueStacks window found · checking Windows window attachment…";
+                PlayingStatusText.Text = "BlueStacks window found · docking it over the Play area…";
                 if (BlueStacksWindowHost.TryAttach(playerWindow, out attachError))
                 {
                     _windowEmbeddingDiagnostic = BlueStacksWindowHost.LastAttachDiagnostic;
@@ -896,7 +898,7 @@ public partial class MainWindow : Window
         _adbError = _windowEmbeddingDiagnostic;
         var detail = attachError ?? _windowDiscoveryDiagnostic ?? "No additional Windows window details are available.";
         PlayingStatusText.Text = $"Could not dock the BlueStacks player: {detail}";
-        RuntimeStatusText.Text = "Game opened · embedding unavailable";
+        RuntimeStatusText.Text = "Game opened · docking unavailable";
         if (DynamicPageContent.Visibility == Visibility.Visible)
             DynamicPageContent.Content = BuildPage(PageTitle.Text);
     }
