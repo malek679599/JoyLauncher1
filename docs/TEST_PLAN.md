@@ -22,6 +22,8 @@
 | In-launcher BlueStacks window hosting | New code; not yet locally tested | `ExternalWindowHost.cs` and `BlueStacksWindowLocator.cs` |
 | Website favicon display | Implemented; network result still needs visual verification | `WebsiteLogoService.cs` |
 | Known publisher website favicons | Implemented; visual/network test pending | `WebsiteLogoService.cs` |
+| Android launcher-activity discovery | Implemented using `cmd package query-activities --components`; local BlueStacks behavior pending | `AdbClient.cs` |
+| Unsupported package-manager fallback | Implemented; displays all installed packages with an unverified status | `AdbClient.cs`, Settings page |
 | Gamepad navigation | Not implemented | Planned |
 
 Run #54 passed the Windows Release build and self-contained publish for the embedded-play and favicon code. The current head adds only a diagnostics-report field; its run #59 is queued. Artifact `JoyLauncher-Windows-x64` from run #54 expires 28 November 2026.
@@ -36,11 +38,13 @@ Run #54 passed the Windows Release build and self-contained publish for the embe
 | Discovery | Multiple configured BlueStacks instances | Each discovered endpoint is shown separately |
 | ADB | ADB disabled in BlueStacks | Clear instructions to enable it; no false connected state |
 | ADB | Select a configured endpoint | ADB connects and the exact selected serial is confirmed as ready |
-| Library | Successful package query | Library shows only package IDs returned by the connected runtime, with known friendly labels where mapped |
+| Library | Launcher-activity query works | Library shows only installed packages returned with Android MAIN/LAUNCHER components |
+| Library | Launcher-activity query is unsupported | Library remains available, shows all installed packages as a fallback, and clearly marks launchability as unverified |
 | Library | Package query returns no entries | Empty live state is shown; sample cards are not presented as installed |
 | Category pages | Games and Entertainment after connection | Pages filter live package data instead of showing sample tiles |
 | Search | Search a verified package identifier or mapped app name | Matching live package entries appear |
-| Minecraft | Exact Minecraft package ID is present | Featured Minecraft action becomes enabled and targets the verified package |
+| Minecraft | Exact Minecraft package ID has a MAIN/LAUNCHER activity | Featured Minecraft action becomes enabled and targets the discovered package |
+| Minecraft | Activity query unsupported | Featured Minecraft uses compatibility fallback and Settings labels launchability as unverified |
 | Minecraft | Package ID is absent | Featured Minecraft action stays disabled and explains the requirement |
 | Launch | Launch a package returned by the live query | ADB launch command result is reported, then JoyLauncher attempts to attach the BlueStacks window |
 | Embedded play | Launch a game from a card | BlueStacks player appears in the JoyLauncher Play page |
