@@ -264,8 +264,6 @@ public partial class MainWindow : Window
     private FrameworkElement BuildSearchPage()
     {
         var root = CreatePageStack();
-        AddIntro(root, "Search your apps", "Search the sample catalogue by app name or category.");
-
         var searchCatalogue = _connectedDeviceSerial is not null ? GetLiveApps() : SampleApps;
         AddIntro(root, "Search your apps", _connectedDeviceSerial is not null
             ? "Search friendly app names, categories, or package identifiers."
