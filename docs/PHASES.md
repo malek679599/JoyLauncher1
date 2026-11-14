@@ -48,7 +48,7 @@ Exit criteria:
 
 ## Phase 4 — Library and daily-use experience
 
-**State: core discovery exists; management features remain planned.**
+**State: core discovery and first persistent management features implemented; target-machine verification remains.**
 
 Scope: complete friendly metadata, publisher icons, search, sort, favorites, pinned apps, recents, and reliable launch feedback.
 
@@ -56,8 +56,9 @@ Exit criteria:
 - [x] Show live packages and known package mappings.
 - [x] Filter to MAIN/LAUNCHER activities when supported.
 - [x] Load website favicons for the known publisher set.
-- [ ] Add persistent favorites and pinned apps.
-- [ ] Add sorting, category filters, recent apps, and broader metadata.
+- [x] Add persistent favorites and pinned apps.
+- [x] Track and surface recently launched apps.
+- [ ] Add sorting controls, broader metadata, and verify preference persistence on the target machine.
 - [ ] Verify icon loading and launch feedback on the target machine.
 
 ## Phase 5 — Interface polish and controls

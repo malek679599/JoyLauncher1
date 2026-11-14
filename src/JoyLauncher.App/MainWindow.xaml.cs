@@ -15,6 +15,8 @@ public partial class MainWindow : Window
     private readonly BlueStacksDiscoveryService _blueStacksDiscovery = new();
     private readonly AdbClient _adbClient = new();
     private readonly WebsiteLogoService _websiteLogoService = new();
+    private readonly LocalPreferencesStore _preferencesStore = new();
+    private LocalPreferences _preferences;
     private BlueStacksDiscoveryResult? _discoveryResult;
     private IReadOnlyList<string> _installedPackages = Array.Empty<string>();
     private IReadOnlyList<string> _launchablePackages = Array.Empty<string>();
@@ -60,6 +62,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _preferences = _preferencesStore.Load();
         LocationChanged += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
         SizeChanged += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
         StateChanged += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
@@ -236,18 +239,23 @@ public partial class MainWindow : Window
         void Show(string category)
         {
             grid.Children.Clear();
-            var items = hasLiveApps
-                ? catalogue
-                : category == "All apps"
-                    ? catalogue
-                    : catalogue.Where(app => app.Category == category).ToArray();
+            IEnumerable<AppEntry> items = catalogue;
+            if (category == "Favorites")
+                items = catalogue.Where(IsFavorite);
+            else if (category == "Pinned")
+                items = catalogue.Where(IsPinned);
+            else if (category == "Recently launched")
+                items = catalogue.Where(app => RecentIndex(app.PackageName) != int.MaxValue)
+                    .OrderBy(app => RecentIndex(app.PackageName));
+            else if (category != "All apps")
+                items = catalogue.Where(app => app.Category == category);
 
             foreach (var app in items)
                 grid.Children.Add(CreateAppCard(app));
         }
 
         var filterLabels = hasLiveApps
-            ? new[] { "All apps" }
+            ? new[] { "All apps", "Favorites", "Pinned", "Recently launched" }
             : new[] { "All apps", "Games", "Entertainment", "Productivity", "System" };
         foreach (var label in filterLabels)
         {
@@ -511,9 +519,9 @@ public partial class MainWindow : Window
         root.Children.Add(copyDiagnostics);
 
         root.Children.Add(CreateInfoCard(
-            "Preferences",
-            "PLANNED",
-            "Fullscreen startup, last-opened page, keyboard navigation, controller navigation, and local appearance preferences."));
+            "Library preferences",
+            "SAVED LOCALLY",
+            $"{_preferences.FavoritePackages.Count} favorites · {_preferences.PinnedPackages.Count} pinned · {_preferences.RecentPackages.Count} recent apps. Stored in your Windows user profile."));
         return root;
     }
 
@@ -600,7 +608,7 @@ public partial class MainWindow : Window
             ? $"{_launchablePackages.Count} LAUNCHABLE APPS"
             : "SAMPLE APPS";
 
-        foreach (var app in apps)
+        foreach (var app in apps.OrderByDescending(IsPinned).ThenBy(app => RecentIndex(app.PackageName)))
             HomeAppGrid.Children.Add(CreateAppCard(app));
 
         HomeAppNotice.Text = hasLiveApps
@@ -703,15 +711,43 @@ public partial class MainWindow : Window
             Margin = new Thickness(0, 10, 0, 0)
         });
 
-        if (app.IsVerified)
+        if (app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName))
         {
+            var actionRow = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(0, 12, 0, 0)
+            };
+            var favoriteButton = new Button
+            {
+                Content = IsFavorite(app) ? "★ Saved" : "☆ Favorite",
+                Tag = app.PackageName,
+                Padding = new Thickness(9, 7, 9, 7),
+                Margin = new Thickness(0, 0, 6, 0),
+                Background = (Brush)FindResource("ElevatedBrush"),
+                ToolTip = "Save this app to Favorites"
+            };
+            favoriteButton.Click += ToggleFavorite_Click;
+            var pinButton = new Button
+            {
+                Content = IsPinned(app) ? "Unpin" : "Pin",
+                Tag = app.PackageName,
+                Padding = new Thickness(9, 7, 9, 7),
+                Background = (Brush)FindResource("ElevatedBrush"),
+                ToolTip = "Keep this app near the top of Home"
+            };
+            pinButton.Click += TogglePin_Click;
+            actionRow.Children.Add(favoriteButton);
+            actionRow.Children.Add(pinButton);
+            content.Children.Add(actionRow);
+
             var launchButton = new Button
             {
                 Content = "Launch app",
                 Tag = app.PackageName ?? app.Name,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Padding = new Thickness(12, 7, 12, 7),
-                Margin = new Thickness(0, 12, 0, 0),
+                Margin = new Thickness(0, 8, 0, 0),
                 Background = (Brush)FindResource("AccentSoftBrush")
             };
             launchButton.Click += LaunchVerifiedPackage_Click;
@@ -791,6 +827,76 @@ public partial class MainWindow : Window
         };
     }
 
+    private void ToggleFavorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string packageName })
+            return;
+        TogglePackage(packageName, _preferences.FavoritePackages);
+        SavePreferences();
+        RefreshCurrentPage();
+    }
+
+    private void TogglePin_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string packageName })
+            return;
+        TogglePackage(packageName, _preferences.PinnedPackages);
+        SavePreferences();
+        UpdateHomeAppTiles();
+        RefreshCurrentPage();
+    }
+
+    private static void TogglePackage(string packageName, List<string> collection)
+    {
+        var index = collection.FindIndex(value =>
+            string.Equals(value, packageName, StringComparison.OrdinalIgnoreCase));
+        if (index >= 0)
+            collection.RemoveAt(index);
+        else
+            collection.Add(packageName);
+    }
+
+    private bool IsFavorite(AppEntry app) => IsFavorite(app.PackageName);
+    private bool IsFavorite(string? packageName) =>
+        !string.IsNullOrWhiteSpace(packageName) &&
+        _preferences.FavoritePackages.Contains(packageName, StringComparer.OrdinalIgnoreCase);
+
+    private bool IsPinned(AppEntry app) => IsPinned(app.PackageName);
+    private bool IsPinned(string? packageName) =>
+        !string.IsNullOrWhiteSpace(packageName) &&
+        _preferences.PinnedPackages.Contains(packageName, StringComparer.OrdinalIgnoreCase);
+
+    private int RecentIndex(string? packageName)
+    {
+        if (string.IsNullOrWhiteSpace(packageName))
+            return int.MaxValue;
+        var index = _preferences.RecentPackages.FindIndex(value =>
+            string.Equals(value, packageName, StringComparison.OrdinalIgnoreCase));
+        return index < 0 ? int.MaxValue : index;
+    }
+
+    private void SavePreferences()
+    {
+        try
+        {
+            _preferencesStore.Save(_preferences);
+        }
+        catch (Exception exception) when (
+            exception is System.IO.IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            RuntimeStatusText.Text = "Could not save library preferences";
+            _adbError = $"Local preferences could not be saved: {exception.Message}";
+        }
+    }
+
+    private void RefreshCurrentPage()
+    {
+        if (PageTitle.Text == "Home")
+            UpdateHomeAppTiles();
+        else if (PlayPage.Visibility != Visibility.Visible)
+            DynamicPageContent.Content = BuildPage(PageTitle.Text);
+    }
+
     private async void LaunchVerifiedPackage_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: string packageName })
@@ -826,6 +932,13 @@ public partial class MainWindow : Window
                  !result.StandardOutput.Contains("No activities found", StringComparison.OrdinalIgnoreCase) &&
                  !result.StandardError.Contains("No activities found", StringComparison.OrdinalIgnoreCase))
         {
+            _preferences.RecentPackages.RemoveAll(value =>
+                string.Equals(value, packageName, StringComparison.OrdinalIgnoreCase));
+            _preferences.RecentPackages.Insert(0, packageName);
+            if (_preferences.RecentPackages.Count > 30)
+                _preferences.RecentPackages.RemoveRange(30, _preferences.RecentPackages.Count - 30);
+            SavePreferences();
+            UpdateHomeAppTiles();
             _adbError = null;
             RuntimeStatusText.Text = $"ADB launch request accepted · {packageName}";
             await ShowEmbeddedPlayerAsync(packageName);

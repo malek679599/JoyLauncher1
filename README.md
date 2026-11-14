@@ -25,7 +25,7 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 
 - C# and WPF
 - .NET 10
-- Local JSON configuration (planned)
+- Local JSON preferences for favorites, pinned apps, and recent launches
 - BlueStacks process/registry/config discovery
 - ADB commands with argument-safe process invocation, timeouts, and captured output
 
@@ -36,6 +36,7 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 - Dark navy desktop shell with Home, Library, Games, Entertainment, Search, Store, and Settings navigation.
 - Home page with a featured Minecraft panel and clearly marked sample app tiles.
 - Library category filters, sample app cards, and a live package-list view after ADB connection.
+- Persistent favorites, pinned apps, and recently launched app ordering stored in the current Windows user's local app-data folder.
 - Games and Entertainment category views.
 - Search across sample entries or verified package identifiers.
 - Settings view for local discovery, ADB endpoints, connection state, and diagnostics.
@@ -63,7 +64,7 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 
 - The user confirmed that the Windows prototype opens, ADB connects, and an app launch is accepted on their local BlueStacks installation. The user confirmed ADB and app launch to the standalone BlueStacks player. The current child-window hosting attempt and launcher-activity filter still need local validation.
 - Cross-process window hosting is experimental and is not a BlueStacks-provided embedding API. JoyLauncher refuses the SetParent call when the host and player DPI-awareness contexts differ, because Windows documents that this can forcibly reset the child process DPI mode. Even with matching contexts, BlueStacks updates, multiple instances, graphics/window-manager behavior, or privilege boundaries can still prevent hosting. The standalone BlueStacks window remains the fallback.
-- Broader app-name and icon metadata, recent activity, and persistent pinning.
+- Broader app-name and icon metadata, richer recent-activity history, and category/sort controls.
 - Website favicons may be absent, generic, or low resolution. JoyLauncher uses initials when a usable icon cannot be loaded.
 - Full Minecraft package/activity verification and end-to-end embedded-play testing.
 - Full keyboard/gamepad navigation, fullscreen kiosk behavior, local JSON preferences, and a packaged installer.
