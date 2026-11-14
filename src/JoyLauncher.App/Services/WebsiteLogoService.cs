@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -24,17 +25,17 @@ public sealed class WebsiteLogoService
     private static readonly IReadOnlyDictionary<string, string> PublisherDomains =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["com.mojang.minecraftpe"] = "www.minecraft.net",
-            ["com.google.android.youtube"] = "www.youtube.com",
-            ["com.google.android.apps.youtube.kids"] = "www.youtubekids.com",
-            ["com.google.android.apps.youtube.music"] = "music.youtube.com",
-            ["com.google.android.videos"] = "tv.google",
-            ["com.android.chrome"] = "www.google.com/chrome",
-            ["com.google.android.gm"] = "mail.google.com",
-            ["com.google.android.apps.maps"] = "maps.google.com",
-            ["com.google.android.apps.photos"] = "photos.google.com",
-            ["com.android.vending"] = "play.google.com",
-            ["com.google.android.googlequicksearchbox"] = "www.google.com"
+            ["com.mojang.minecraftpe"] = "https://www.minecraft.net/",
+            ["com.google.android.youtube"] = "https://www.youtube.com/",
+            ["com.google.android.apps.youtube.kids"] = "https://www.youtubekids.com/",
+            ["com.google.android.apps.youtube.music"] = "https://music.youtube.com/",
+            ["com.google.android.videos"] = "https://tv.google/",
+            ["com.android.chrome"] = "https://www.google.com/chrome/",
+            ["com.google.android.gm"] = "https://mail.google.com/",
+            ["com.google.android.apps.maps"] = "https://maps.google.com/",
+            ["com.google.android.apps.photos"] = "https://photos.google.com/",
+            ["com.android.vending"] = "https://play.google.com/",
+            ["com.google.android.googlequicksearchbox"] = "https://www.google.com/"
         };
 
     public Task<BitmapImage?> GetLogoAsync(string? packageName)
@@ -54,7 +55,7 @@ public sealed class WebsiteLogoService
         {
             var domain = PublisherDomains[packageName];
             var requestUri = new Uri(
-                $"https://www.google.com/s2/favicons?domain={Uri.EscapeDataString(domain)}&sz=128");
+                $"https://www.google.com/s2/favicons?domain_url={Uri.EscapeDataString(domain)}&sz=128");
 
             using var response = await Client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead);
             if (!response.IsSuccessStatusCode)
