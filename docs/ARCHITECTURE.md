@@ -4,83 +4,89 @@
 
 JoyLauncher is a Windows WPF application. BlueStacks 5 is a separate Android runtime process.
 
-`Windows 11 → JoyLauncher (WPF) → BlueStacks 5 ADB / supported launch interface → Android apps`
+`Windows 11 → JoyLauncher (WPF) → BlueStacks 5 ADB → Android applications`
 
-The launcher must not pretend to provide Android compatibility itself.
+JoyLauncher is not an emulator and does not replace BlueStacks. BlueStacks remains responsible for Android compatibility and application execution.
 
-## Proposed solution structure
+## Current solution structure
 
 ```
 JoyLauncher/
   src/
     JoyLauncher.App/
       App.xaml
-      App.xaml.cs
       MainWindow.xaml
       MainWindow.xaml.cs
-      Views/
-      ViewModels/
-      Themes/
-      Assets/
-    JoyLauncher.Core/
-      Models/
       Services/
-      Abstractions/
-    JoyLauncher.Infrastructure/
-      BlueStacks/
-      Configuration/
-      Diagnostics/
-  tests/
-    JoyLauncher.Core.Tests/
+        BlueStacksDiscoveryService.cs
+        AdbClient.cs
   docs/
-  assets/
-    source/
-    generated/
+  .github/workflows/
 ```
 
-The project split may be simplified if that reduces build risk, but UI code, runtime integration, and persistence should remain separated.
+The first prototype keeps the code in one WPF project to reduce build friction. Runtime discovery and ADB process handling are separated from the view code in dedicated services. Further extraction into Core/Infrastructure projects can happen after the first local BlueStacks validation.
 
 ## Technology
 
-- C# / WPF for native Windows desktop UI.
-- .NET 10 LTS target.
-- MVVM-style separation for navigation and view state.
-- System.Text.Json for local settings and user library metadata.
-- .NET process APIs for carefully bounded process discovery and launch.
-- ADB invocation through a dedicated service with timeouts, output capture, and cancellation.
+- C# / WPF on .NET 10.
+- System.Text.Json is planned for local preferences.
+- .NET process and registry APIs for read-only Windows discovery.
+- ADB invoked through ProcessStartInfo.ArgumentList, never through a concatenated shell command.
+- Async process waits, bounded timeouts, captured stdout/stderr, and process cleanup on timeout.
 
 ## BlueStacks discovery
 
-1. Check common install locations as hints, not assumptions.
-2. Inspect registered installation information only when available.
-3. Allow the user to select an executable or ADB path in Settings.
-4. Discover ADB endpoints dynamically where possible.
-5. Never hardcode a port, package name, or install path as the only supported option.
-6. Show the source and confidence of detected runtime information in diagnostics.
+`BlueStacksDiscoveryService` checks multiple sources rather than relying on one hardcoded path:
 
-ADB commands must use argument-safe process invocation rather than concatenated shell commands. Every operation needs a timeout and a useful error result.
+1. Running `HD-Player` process metadata, when Windows permits reading it.
+2. BlueStacks registry installation values in 64-bit and 32-bit registry views.
+3. BlueStacks uninstall registration data.
+4. Common install-directory hints, used only as candidates.
+5. The BlueStacks configuration file for per-instance ADB port entries.
 
-## Core service contracts
+The service searches for the bundled `HD-Adb.exe` first and `adb.exe` as a fallback. It parses configured instance endpoints and shows each detected instance in Settings. It does not assume that one port is valid for every installation or instance.
 
-- IBlueStacksDiscovery — finds candidate installations and runtime endpoints.
-- IAdbClient — checks connectivity, lists packages, and requests app launch.
-- IAppCatalogService — normalizes installed apps into launcher models.
-- ISettingsStore — loads and saves local settings safely.
-- INavigationService — controls selected page and focus.
-- IDiagnosticsService — collects non-secret runtime and application diagnostics.
+Discovery is read-only. It does not change registry values, BlueStacks settings, configuration files, or user data.
 
-## Data and privacy
+## ADB connection and package discovery
 
-- Store settings under the user's local application data directory.
-- Do not store passwords, tokens, or Google account credentials.
-- Do not upload app lists or diagnostics.
-- Keep logs local and avoid recording sensitive command output.
-- Validate JSON on load and recover safely from malformed configuration.
+The user must enable Android Debug Bridge in BlueStacks Settings → Advanced and save the setting. JoyLauncher does not toggle this setting automatically.
 
-## Reliability
+For a selected discovered instance, `AdbClient`:
+
+1. Invokes `adb connect host:port` using separate process arguments.
+2. Runs `adb devices -l` and requires the selected endpoint to appear in the ready `device` state.
+3. Runs `pm list packages` against that exact serial.
+4. Parses package identifiers and deduplicates them.
+5. Returns explicit errors and timeout results instead of reporting false success.
+
+The first live Library view displays verified package identifiers. Friendly labels, icons, and category classification are not implemented yet.
+
+## App launch
+
+A launch button is created only for a package identifier returned by the live package query. The service invokes Android's launcher intent through the ADB `monkey` command with an argument-safe process call and a bounded timeout.
+
+A zero exit code means the launch request was accepted by the command; it is not proof that the app completed startup or remained open. Errors and timeouts remain visible in launcher status.
+
+The featured Minecraft Home button remains a placeholder until a package can be identified from verified metadata or the user selects the correct package. No package identifier is hardcoded as the only supported option.
+
+## Reliability and privacy
 
 - BlueStacks unavailable must not crash the launcher.
 - ADB timeout must not freeze the UI.
-- Use async operations for process and I/O work.
-- Catch and classify expected failures at service boundaries.
-- Never report a launch as successful until a process/ADB result supports that claim.
+- Multiple detected instances are presented separately.
+- No app is marked installed before a successful package query.
+- No app is launchable until its package identifier is in the verified result list.
+- Settings, package lists, and diagnostics stay local.
+- Do not store passwords, tokens, or Google account credentials.
+- Do not upload app lists or diagnostics.
+- Never modify BlueStacks configuration without explicit approval.
+
+## Remaining architecture work
+
+- User-selectable fallback paths for the player and ADB executable.
+- Friendly application names and icons.
+- Persistent pins, recent apps, and local JSON settings.
+- Unit tests for discovery parsing and ADB output handling.
+- More complete diagnostics and cancellation support.
+- Keyboard/gamepad navigation and packaged Windows release.
