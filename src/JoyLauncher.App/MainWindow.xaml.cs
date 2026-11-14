@@ -381,9 +381,9 @@ public partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Left,
             Margin = new Thickness(0, 4, 0, 18),
             Background = (Brush)FindResource("AccentBrush"),
-            Foreground = Brushes.White,
-            Click = RefreshDetection_Click
+            Foreground = Brushes.White
         };
+        refresh.Click += RefreshDetection_Click;
         root.Children.Add(refresh);
 
         root.Children.Add(CreateInfoCard(
