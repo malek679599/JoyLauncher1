@@ -49,6 +49,8 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 - Reads per-instance ADB ports from the local BlueStacks configuration file.
 - Lets the user select a discovered instance and request an ADB connection.
 - Lists package identifiers returned by the connected Android runtime.
+- Queries Android Package Manager for `MAIN` + `LAUNCHER` activities and, when supported, limits app cards to packages with a normal launcher entry.
+- Falls back to the installed-package list when the Android shell does not support activity discovery, and labels that state as unverified.
 - Resolves friendly names and categories for a small set of well-known Android package IDs; unknown packages remain identifiable by their package suffix and full ID.
 - Uses live package data in Library, Games, Entertainment, and Search.
 - Enables the featured Minecraft action only when the exact Minecraft Android package ID is present in the verified package list.
@@ -59,9 +61,9 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 
 **Still incomplete**
 
-- The user confirmed that the Windows prototype opens, ADB connects, and an app launch is accepted on their local BlueStacks installation. The game still opens in the standalone BlueStacks player; the new in-launcher window hosting needs local validation.
+- The user confirmed that the Windows prototype opens, ADB connects, and an app launch is accepted on their local BlueStacks installation. The user confirmed ADB and app launch to the standalone BlueStacks player. The in-launcher window hosting and the new launcher-activity filter still need local validation.
 - Window re-parenting is a best-effort Windows integration, not a BlueStacks-provided embedding API. BlueStacks updates, multiple instances, or graphics/window-manager behavior can prevent it from working.
-- Broader app-name and icon metadata, launcher-activity detection, recent activity, and persistent pinning.
+- Broader app-name and icon metadata, recent activity, and persistent pinning.
 - Website favicons may be absent, generic, or low resolution. JoyLauncher uses initials when a usable icon cannot be loaded.
 - Full Minecraft package/activity verification and end-to-end embedded-play testing.
 - Full keyboard/gamepad navigation, fullscreen kiosk behavior, local JSON preferences, and a packaged installer.
