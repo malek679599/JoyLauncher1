@@ -1,0 +1,27 @@
+# Build output
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.cache
+
+# Rider / IDE
+.idea/
+*.sln.iml
+
+# Test results
+TestResults/
+*.trx
+
+# Local configuration and logs
+*.local.json
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
