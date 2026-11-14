@@ -57,9 +57,10 @@
 
 ## Phase 5 — Quality and release
 - [x] Add a Windows GitHub Actions Release build workflow.
-- [x] Verify the latest Windows CI Release build and self-contained publish passed for commit `6b79504` (run #42).
+- [x] Verify Windows CI Release build and self-contained publish including embedded-play and website-favicon code (run #54, commit `1e6fe5c`).
 - [ ] Run a Release build on the user's Windows machine.
-- [ ] Test against the user's installed BlueStacks 5.
+- [x] Verify local ADB connection and an app launch to the separate BlueStacks window (user-confirmed).
+- [ ] Validate in-launcher embedding and full input/restore behavior.
 - [ ] Test keyboard navigation and failure recovery.
 - [ ] Add automated tests for runtime discovery, package metadata, and launchability.
 - [ ] Package a versioned Windows build.
@@ -78,5 +79,5 @@
 
 - Before a successful ADB query, the Home view uses clearly labelled preview content. After connection, app cards are based on package IDs returned by the selected BlueStacks instance.
 - The featured Minecraft action is enabled only when the exact Minecraft package ID is present in that live package list.
-- User-confirmed local validation covers the launcher opening and ADB connection. The new in-launcher external-window host compiles in CI but still needs local testing; package enumeration does not prove that every listed package has a launchable activity. Window re-parenting is best-effort and is not a BlueStacks-supported embed API.
+- User-confirmed local validation covers the launcher opening, ADB connection, and app launch to the standalone BlueStacks player. The in-launcher external-window host compiles in CI (run #54) but still needs local testing; package enumeration does not prove that every listed package has a launchable activity. Window re-parenting is best-effort and is not a BlueStacks-supported embed API.
 - The Figma workspace currently contains Foundations and Components pages, design tokens, text styles, and an AppTile component. A complete Home/Library composition has not yet been completed; further Figma automation was blocked by the workspace's current usage allowance.
