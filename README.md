@@ -1,39 +1,65 @@
 # JoyLauncher
 
-A fullscreen Windows launcher shell for BlueStacks 5, inspired by the clarity and console-first navigation of SteamOS.
+A Windows desktop launcher shell for BlueStacks 5, inspired by the clarity and controller-friendly navigation of console launchers.
 
-**JoyLauncher is not an Android emulator or an operating system.** It is a Windows desktop application that discovers and launches apps through an existing BlueStacks installation.
+**JoyLauncher is not an Android emulator or a replacement operating system.** It is a Windows application that will discover and launch Android apps through an existing BlueStacks installation.
 
 ## Product direction
 
 - Minecraft is the featured flagship app, but the launcher is general-purpose.
-- Support Android apps such as YouTube, YouTube Kids, Minecraft, and other apps installed in BlueStacks.
+- Support apps such as YouTube, YouTube Kids, Minecraft, and other apps installed in BlueStacks.
 - Provide Home, Library, Games, Entertainment, Search, Store discovery, and Settings areas.
 - Use a dark navy visual system, restrained blue accents, readable typography, and purposeful motion.
-- Support keyboard navigation first; gamepad navigation is a planned enhancement.
-- Use local configuration and robust diagnostics.
+- Keyboard navigation comes first; gamepad navigation is planned.
+- Keep preferences local and diagnostics clear.
 - Avoid paid APIs, subscriptions, proprietary paid assets, and unnecessary background services.
 
 ## Runtime model
 
 `Windows 11 → JoyLauncher → BlueStacks 5 → Android applications`
 
-BlueStacks remains responsible for Android compatibility. JoyLauncher will use supported local discovery and ADB capabilities where available. It must not assume fixed executable paths, ADB ports, or package identifiers.
+BlueStacks remains responsible for Android compatibility. JoyLauncher will use local discovery and ADB capabilities where available. It must not assume fixed executable paths, ADB ports, or package identifiers.
 
-## Technology direction
+## Technology
 
 - C# and WPF
-- .NET 10 LTS
-- Git for version control
-- Local JSON configuration
-- BlueStacks 5 ADB integration, detected at runtime
+- .NET 10
+- Local JSON configuration (planned)
+- BlueStacks 5 runtime discovery and ADB integration (planned)
 
-## Current status
+## Current implementation
 
-**Phase 1 — Initial WPF shell committed.** The solution, navigation shell, initial Home layout, and Windows CI build workflow are in the repository. The build workflow has not yet been observed running successfully, and BlueStacks integration is not implemented.
+**Phase 1 — WPF navigation prototype**
 
-## Build and test policy
+- Dark navy desktop shell with Home, Library, Games, Entertainment, Search, Store, and Settings navigation.
+- Home page with a featured Minecraft panel and clearly marked sample app tiles.
+- Library category filters and app cards.
+- Games and Entertainment category views.
+- Search across the sample catalogue.
+- Settings and diagnostics information layout.
+- Escape returns to Home from a secondary page.
+- Windows GitHub Actions build workflow.
 
-A successful source edit is not a successful build. A successful build is not proof that BlueStacks integration works. Each milestone must be built and tested on the target Windows machine, with results recorded honestly.
+**Not implemented yet**
 
-See [Project brief](docs/PROJECT_BRIEF.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Test plan](docs/TEST_PLAN.md), and [Decision log](docs/DECISIONS.md).
+- BlueStacks process or executable detection.
+- ADB endpoint discovery and connection.
+- Installed Android package enumeration.
+- Real app icons, recent activity, pin persistence, or app launching.
+- Gamepad navigation, fullscreen kiosk behavior, or packaged installer.
+
+Sample app cards are demonstration data. They are not evidence that those apps are installed on the user's BlueStacks instance.
+
+## Build
+
+On Windows with the .NET 10 SDK installed:
+
+```powershell
+dotnet build JoyLauncher.sln --configuration Release
+```
+
+## Validation policy
+
+A successful source edit is not a successful build. A successful build is not proof that BlueStacks integration works. The Windows CI workflow builds the solution; interactive behavior and BlueStacks compatibility still require testing on the target Windows machine.
+
+See [Project brief](docs/PROJECT_BRIEF.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Test plan](docs/TEST_PLAN.md), [Design system](docs/DESIGN_SYSTEM.md), and [Art kit](docs/ART_KIT.md).
