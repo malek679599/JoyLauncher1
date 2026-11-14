@@ -13,7 +13,11 @@ namespace JoyLauncher.App;
 public partial class MainWindow : Window
 {
     private readonly BlueStacksDiscoveryService _blueStacksDiscovery = new();
+    private readonly AdbClient _adbClient = new();
     private BlueStacksDiscoveryResult? _discoveryResult;
+    private IReadOnlyList<string> _installedPackages = Array.Empty<string>();
+    private string? _connectedDeviceSerial;
+    private string? _adbError;
 
     private static readonly IReadOnlyList<AppEntry> SampleApps =
     [
@@ -41,6 +45,9 @@ public partial class MainWindow : Window
     private async Task RefreshRuntimeStatusAsync()
     {
         RuntimeStatusText.Text = "Scanning BlueStacks…";
+        _installedPackages = Array.Empty<string>();
+        _connectedDeviceSerial = null;
+        _adbError = null;
         try
         {
             _discoveryResult = await Task.Run(_blueStacksDiscovery.Discover);
@@ -64,6 +71,46 @@ public partial class MainWindow : Window
     private async void RefreshDetection_Click(object sender, RoutedEventArgs e)
     {
         await RefreshRuntimeStatusAsync();
+    }
+
+    private async void ConnectAndScan_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: BlueStacksAdbEndpoint endpoint })
+            return;
+
+        var adbPath = _discoveryResult?.AdbPath;
+        if (string.IsNullOrWhiteSpace(adbPath))
+        {
+            _adbError = "The discovered ADB executable is missing. Refresh local detection first.";
+            DynamicPageContent.Content = BuildSettingsPage();
+            return;
+        }
+
+        RuntimeStatusText.Text = $"Connecting to {endpoint.InstanceName}…";
+        _adbError = null;
+        var scan = await _adbClient.ConnectAndListPackagesAsync(adbPath, endpoint);
+
+        if (!scan.Success)
+        {
+            _connectedDeviceSerial = null;
+            _installedPackages = Array.Empty<string>();
+            _adbError = scan.Error ?? "ADB connection failed for an unknown reason.";
+            RuntimeStatusText.Text = "ADB connection failed";
+        }
+        else
+        {
+            _connectedDeviceSerial = scan.DeviceSerial;
+            _installedPackages = scan.PackageNames;
+            RuntimeStatusText.Text = $"ADB connected · {_installedPackages.Count} packages";
+        }
+
+        DynamicPageContent.Content = PageTitle.Text switch
+        {
+            "Library" => BuildLibraryPage(),
+            "Settings" => BuildSettingsPage(),
+            "Search" => BuildSearchPage(),
+            _ => DynamicPageContent.Content
+        };
     }
 
     private void Navigation_Click(object sender, RoutedEventArgs e)
@@ -115,7 +162,15 @@ public partial class MainWindow : Window
     private FrameworkElement BuildLibraryPage()
     {
         var root = CreatePageStack();
-        AddIntro(root, "Your apps", "These preview entries demonstrate the layout. They are not yet verified as installed.");
+        var liveApps = _installedPackages
+            .Select(packageName => new AppEntry(packageName, "Installed Android package", "Discovered from BlueStacks ADB", IsVerified: true))
+            .ToArray();
+        var hasLiveApps = liveApps.Length > 0;
+        var catalogue = hasLiveApps ? liveApps : SampleApps;
+
+        AddIntro(root, "Your apps", hasLiveApps
+            ? $"Live package list from {_connectedDeviceSerial}. Friendly app names and icons are a later metadata step."
+            : "These preview entries demonstrate the layout. They are not yet verified as installed.");
 
         var filters = new StackPanel
         {
@@ -127,15 +182,20 @@ public partial class MainWindow : Window
         void Show(string category)
         {
             grid.Children.Clear();
-            var items = category == "All apps"
-                ? SampleApps
-                : SampleApps.Where(app => app.Category == category).ToArray();
+            var items = hasLiveApps
+                ? catalogue
+                : category == "All apps"
+                    ? catalogue
+                    : catalogue.Where(app => app.Category == category).ToArray();
 
             foreach (var app in items)
                 grid.Children.Add(CreateAppCard(app));
         }
 
-        foreach (var label in new[] { "All apps", "Games", "Entertainment", "Productivity", "System" })
+        var filterLabels = hasLiveApps
+            ? new[] { "All apps" }
+            : new[] { "All apps", "Games", "Entertainment", "Productivity", "System" };
+        foreach (var label in filterLabels)
         {
             var filter = CreateFilterButton(label);
             filter.Click += (_, _) => Show(label);
@@ -146,8 +206,10 @@ public partial class MainWindow : Window
         root.Children.Add(grid);
         Show("All apps");
         root.Children.Add(CreateNotice(
-            "Live app discovery is not connected",
-            "The final library will be populated from BlueStacks. JoyLauncher will not invent package IDs or mark sample tiles as installed."));
+            hasLiveApps ? "Verified package data" : "Preview data only",
+            hasLiveApps
+                ? $"{liveApps.Length} package names were returned by BlueStacks ADB. App display names and icons have not yet been resolved."
+                : "Connect to a discovered BlueStacks ADB endpoint from Settings to replace these sample cards with real package data."));
         return root;
     }
 
@@ -175,6 +237,9 @@ public partial class MainWindow : Window
         var root = CreatePageStack();
         AddIntro(root, "Search your apps", "Search the sample catalogue by app name or category.");
 
+        var searchCatalogue = _installedPackages.Count > 0
+            ? _installedPackages.Select(packageName => new AppEntry(packageName, "Installed Android package", "Discovered from BlueStacks ADB", IsVerified: true)).ToArray()
+            : SampleApps;
         var search = new TextBox
         {
             Height = 46,
@@ -201,7 +266,7 @@ public partial class MainWindow : Window
         {
             results.Children.Clear();
             var query = search.Text.Trim();
-            foreach (var app in SampleApps.Where(app =>
+            foreach (var app in searchCatalogue.Where(app =>
                          app.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                          app.Category.Contains(query, StringComparison.OrdinalIgnoreCase)))
                 results.Children.Add(CreateAppCard(app));
@@ -276,6 +341,39 @@ public partial class MainWindow : Window
             result?.AdbExecutableFound == true ? "FOUND" : "NOT FOUND",
             result?.AdbPath ?? "The BlueStacks-bundled HD-Adb.exe or adb.exe was not found in the detected install directory."));
 
+        if (_connectedDeviceSerial is not null)
+            root.Children.Add(CreateInfoCard("ADB device", "CONNECTED", $"Verified device serial: {_connectedDeviceSerial}"));
+
+        if (!string.IsNullOrWhiteSpace(_adbError))
+            root.Children.Add(CreateInfoCard("Last ADB error", "ACTION REQUIRED", _adbError));
+
+        if (result?.AdbExecutableFound == true && result.AdbEndpoints.Count > 0)
+        {
+            root.Children.Add(new TextBlock
+            {
+                Text = "AVAILABLE BLUESTACKS INSTANCES",
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                Margin = new Thickness(0, 8, 0, 8)
+            });
+
+            foreach (var endpoint in result.AdbEndpoints)
+            {
+                var connectButton = new Button
+                {
+                    Content = $"Connect to {endpoint.InstanceName}  ·  {endpoint.Host}:{endpoint.Port}",
+                    Tag = endpoint,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(0, 0, 0, 8),
+                    Padding = new Thickness(14, 10, 14, 10),
+                    Background = (Brush)FindResource("AccentSoftBrush"),
+                    Click = ConnectAndScan_Click
+                };
+                root.Children.Add(connectButton);
+            }
+        }
+
         var refresh = new Button
         {
             Content = "↻   Refresh local detection",
@@ -338,7 +436,7 @@ public partial class MainWindow : Window
         });
         content.Children.Add(new TextBlock
         {
-            Text = app.Category + " · preview",
+            Text = app.Category + (app.IsVerified ? " · verified" : " · preview"),
             FontSize = 11,
             Foreground = (Brush)FindResource("SecondaryTextBrush"),
             Margin = new Thickness(0, 7, 0, 0)
@@ -452,5 +550,5 @@ public partial class MainWindow : Window
         }
     }
 
-    private sealed record AppEntry(string Name, string Category, string Description);
+    private sealed record AppEntry(string Name, string Category, string Description, bool IsVerified = false);
 }
