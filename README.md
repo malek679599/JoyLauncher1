@@ -55,14 +55,14 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 - Uses live package data in Library, Games, Entertainment, and Search.
 - Enables the featured Minecraft action only when the exact Minecraft Android package ID is present in the verified package list.
 - Provides launch actions only for package identifiers returned by the live ADB package list.
-- Adds a JoyLauncher Play page that attempts to host the BlueStacks player window in the launcher, then restores its original top-level window when leaving the page or closing JoyLauncher.
+- Adds a JoyLauncher Play page that attempts true cross-process child-window hosting with `SetParent`; it checks DPI-awareness contexts first, sizes the child to the Play viewport, and restores the original top-level window when leaving the page or closing JoyLauncher.
 - Loads publisher website favicons for the initial known-package set, with initials as a no-network fallback. Source domains are listed in [Website logo sources](docs/WEBSITE_LOGO_SOURCES.md).
 - Uses process argument lists instead of shell command concatenation and applies command timeouts.
 
 **Still incomplete**
 
-- The user confirmed that the Windows prototype opens, ADB connects, and an app launch is accepted on their local BlueStacks installation. The user confirmed ADB and app launch to the standalone BlueStacks player. The in-launcher window hosting and the new launcher-activity filter still need local validation.
-- Window re-parenting is a best-effort Windows integration, not a BlueStacks-provided embedding API. BlueStacks updates, multiple instances, or graphics/window-manager behavior can prevent it from working.
+- The user confirmed that the Windows prototype opens, ADB connects, and an app launch is accepted on their local BlueStacks installation. The user confirmed ADB and app launch to the standalone BlueStacks player. The current child-window hosting attempt and launcher-activity filter still need local validation.
+- Cross-process window hosting is experimental and is not a BlueStacks-provided embedding API. JoyLauncher refuses the SetParent call when the host and player DPI-awareness contexts differ, because Windows documents that this can forcibly reset the child process DPI mode. Even with matching contexts, BlueStacks updates, multiple instances, graphics/window-manager behavior, or privilege boundaries can still prevent hosting. The standalone BlueStacks window remains the fallback.
 - Broader app-name and icon metadata, recent activity, and persistent pinning.
 - Website favicons may be absent, generic, or low resolution. JoyLauncher uses initials when a usable icon cannot be loaded.
 - Full Minecraft package/activity verification and end-to-end embedded-play testing.

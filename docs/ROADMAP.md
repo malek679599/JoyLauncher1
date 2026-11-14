@@ -36,8 +36,8 @@
 - [x] Connect to a selected endpoint and list verified Android package identifiers.
 - [x] Add launch requests for packages returned by the live ADB query.
 - [x] Add bounded ADB command timeouts and process cleanup.
-- [x] Add best-effort BlueStacks player window hosting inside JoyLauncher, with a restore path when leaving Play.
-- [ ] Validate embedded rendering, input, resizing, fullscreen, and window restoration on the user's BlueStacks setup.
+- [ ] Complete guarded cross-process child-window hosting with DPI-awareness preflight and a verified restore path when leaving Play.
+- [ ] Validate actual child-window rendering, input, resizing, fullscreen, DPI behavior, and window restoration on the user's BlueStacks setup.
 - [ ] Add user-configurable fallback paths.
 - [x] Test discovery and ADB connection against the user's BlueStacks installation (user-confirmed).
 

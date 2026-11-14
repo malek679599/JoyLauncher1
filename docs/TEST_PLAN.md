@@ -19,7 +19,7 @@
 | Figma foundations and AppTile component | Created; full Home/Library composition incomplete | JoyLauncher Figma file |
 | Local Windows build | Not yet run | Requires target Windows machine |
 | Actual BlueStacks connection | User-confirmed working | User report, 14 Nov 2026 |
-| In-launcher BlueStacks window hosting | New code; not yet locally tested | `ExternalWindowHost.cs` and `BlueStacksWindowLocator.cs` |
+| In-launcher BlueStacks child-window hosting | Experimental guarded `SetParent` implementation; not yet locally tested | `ExternalWindowHost.cs` and `BlueStacksWindowLocator.cs` |
 | Website favicon display | Implemented; network result still needs visual verification | `WebsiteLogoService.cs` |
 | Known publisher website favicons | Implemented; visual/network test pending | `WebsiteLogoService.cs` |
 | Android launcher-activity discovery | Implemented using `cmd package query-activities --components`; local BlueStacks behavior pending | `AdbClient.cs` |
@@ -47,10 +47,10 @@ Run #54 passed the Windows Release build and self-contained publish for the embe
 | Minecraft | Activity query unsupported | Featured Minecraft uses compatibility fallback and Settings labels launchability as unverified |
 | Minecraft | Package ID is absent | Featured Minecraft action stays disabled and explains the requirement |
 | Launch | Launch a package returned by the live query | ADB launch command result is reported, then JoyLauncher attempts to attach the BlueStacks window |
-| Embedded play | Launch a game from a card | BlueStacks player appears in the JoyLauncher Play page |
-| Embedded play | Click Back to JoyLauncher | Player detaches and its original standalone window is restored |
+| Embedded play | Launch a game from a card with matching DPI-awareness contexts | BlueStacks player becomes a child of the JoyLauncher Play surface and fills its client area |
+| Embedded play | Launch when DPI-awareness contexts differ | JoyLauncher refuses SetParent before changing the BlueStacks window and reports both contexts and DPI values |\n| Embedded play | Click Back to JoyLauncher | Player detaches, and its original standalone styles, owner, and bounds are restored |
 | Embedded play | Press Escape while the launcher has focus | Returns to Home and restores the standalone player window |
-| Embedded play | Resize JoyLauncher or press F11 | Embedded player resizes with the hosting surface |
+| Embedded play | Resize JoyLauncher or press F11 | Embedded child HWND resizes with the hosting surface; verify at the same and different monitor DPI scales |
 | Embedded play | Embedding is unavailable | Clear fallback text appears; Retry and Back remain usable |
 | Publisher logos | Open known app cards online | Publisher website favicons appear; failed requests leave initials visible |
 | Failure | ADB missing or unreachable | Clear diagnostic; launcher remains usable |

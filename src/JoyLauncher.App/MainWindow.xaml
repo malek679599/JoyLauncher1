@@ -131,7 +131,7 @@
                 <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="True">
                     <Button DockPanel.Dock="Left" Content="←  Back to JoyLauncher" Click="ReturnToLauncher_Click"
                             Background="{StaticResource AccentSoftBrush}" Margin="0,0,16,0"/>
-                    <Button DockPanel.Dock="Right" Content="Retry docking" Click="RetryEmbedding_Click"
+                    <Button DockPanel.Dock="Right" Content="Retry embedding" Click="RetryEmbedding_Click"
                             Background="{StaticResource SurfaceBrush}" Margin="12,0,0,0"/>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock x:Name="PlayingAppTitle" Text="Now playing" FontSize="18" FontWeight="Bold"/>
