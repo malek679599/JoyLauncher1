@@ -18,10 +18,19 @@
 
         <Border Grid.Column="0" Background="#0B1322" Padding="18">
             <DockPanel LastChildFill="True">
-                <StackPanel DockPanel.Dock="Top" Margin="4,8,4,30">
-                    <TextBlock Text="JOYLAUNCHER" FontSize="19" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="YOUR ANDROID HUB" FontSize="10" Foreground="{StaticResource SecondaryTextBrush}" Margin="1,5,0,0"/>
-                </StackPanel>
+                <Grid DockPanel.Dock="Top" Margin="4,8,4,30">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="42"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Width="38" Height="38" Background="{StaticResource AccentBrush}" CornerRadius="10" VerticalAlignment="Top">
+                        <TextBlock Text="JL" FontSize="15" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="10,1,0,0">
+                        <TextBlock Text="JOYLAUNCHER" FontSize="15" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="ANDROID DESKTOP" FontSize="9" FontWeight="SemiBold" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Grid>
 
                 <StackPanel DockPanel.Dock="Bottom" Margin="4,18,4,4">
                     <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="12">
