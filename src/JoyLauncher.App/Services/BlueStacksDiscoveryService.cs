@@ -82,7 +82,12 @@ public sealed class BlueStacksDiscoveryService
             {
                 try
                 {
-                    var path = process.MainModule?.FileName;
+                    var processId = process.Id;
+                    string? path = null;
+
+                    if (!ProcessImagePathReader.TryGetImagePath(processId, out path, out _))
+                        path = process.MainModule?.FileName;
+
                     if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
                         paths.Add(path);
                 }
