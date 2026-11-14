@@ -42,6 +42,7 @@
 - [x] Test discovery and ADB connection against the user's BlueStacks installation (user-confirmed).
 
 - [x] Add a first-pass publisher website favicon catalog for known packages, with initials as a local fallback.
+- [x] Query Android Package Manager for MAIN/LAUNCHER activities and filter normal app entries when supported.
 - [ ] Resolve remaining friendly app names, native app icons, and category metadata.
 
 ## Phase 4 — Library experience
@@ -49,6 +50,7 @@
 - [x] Populate the Library with package identifiers after a successful ADB package query.
 - [x] Allow launch requests only for verified package identifiers.
 - [x] Add publisher website favicons for the initial known-package set.
+- [x] Filter package results to normal launcher activities when the Android runtime supports it.
 - [ ] Resolve remaining app names and higher-quality app-specific icons.
 - [ ] Search, sort, pin, favourite, and filter discovered apps.
 - [ ] Add recent-app tracking where reliable.
@@ -79,5 +81,5 @@
 
 - Before a successful ADB query, the Home view uses clearly labelled preview content. After connection, app cards are based on package IDs returned by the selected BlueStacks instance.
 - The featured Minecraft action is enabled only when the exact Minecraft package ID is present in that live package list.
-- User-confirmed local validation covers the launcher opening, ADB connection, and app launch to the standalone BlueStacks player. The in-launcher external-window host compiles in CI (run #54) but still needs local testing; package enumeration does not prove that every listed package has a launchable activity. Window re-parenting is best-effort and is not a BlueStacks-supported embed API.
+- User-confirmed local validation covers the launcher opening, ADB connection, and app launch to the standalone BlueStacks player. The in-launcher external-window host compiles in CI (run #54) but still needs local testing; launcher-activity discovery is now attempted; older Android shells fall back to all installed package IDs and clearly mark launchability as unverified. Window re-parenting is best-effort and is not a BlueStacks-supported embed API.
 - The Figma workspace currently contains Foundations and Components pages, design tokens, text styles, and an AppTile component. A complete Home/Library composition has not yet been completed; further Figma automation was blocked by the workspace's current usage allowance.
