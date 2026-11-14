@@ -90,3 +90,10 @@ The featured Minecraft Home button remains a placeholder until a package can be 
 - Unit tests for discovery parsing and ADB output handling.
 - More complete diagnostics and cancellation support.
 - Keyboard/gamepad navigation and packaged Windows release.
+
+
+## BlueStacks Play-area docking
+
+JoyLauncher uses a borderless top-level BlueStacks player window positioned over the Play viewport. The player remains a separate Windows process and is associated as an owned window of JoyLauncher so it can stay above the launcher and minimize/restore with it. JoyLauncher updates its screen position and size when the main window moves, resizes, maximizes, restores, or activates.
+
+This is visual window docking, not a BlueStacks-supported in-process embedding API. It intentionally avoids cross-process SetParent because Windows documents DPI-awareness compatibility risks for cross-process parent changes. The player is restored to its original owner, styles, and bounds when the user leaves the Play page or closes JoyLauncher.
