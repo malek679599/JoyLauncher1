@@ -14,6 +14,7 @@ public partial class MainWindow : Window
 {
     private readonly BlueStacksDiscoveryService _blueStacksDiscovery = new();
     private readonly AdbClient _adbClient = new();
+    private readonly WebsiteLogoService _websiteLogoService = new();
     private BlueStacksDiscoveryResult? _discoveryResult;
     private IReadOnlyList<string> _installedPackages = Array.Empty<string>();
     private string? _connectedDeviceSerial;
@@ -24,11 +25,11 @@ public partial class MainWindow : Window
 
     private static readonly IReadOnlyList<AppEntry> SampleApps =
     [
-        new("Minecraft", "Games", "Featured sandbox game"),
-        new("YouTube", "Entertainment", "Video and creator content"),
-        new("YouTube Kids", "Entertainment", "Family-focused video app"),
-        new("Play Store", "Store", "Android app marketplace"),
-        new("Chrome", "Productivity", "Web browser"),
+        new("Minecraft", "Games", "Featured sandbox game", PackageName: "com.mojang.minecraftpe"),
+        new("YouTube", "Entertainment", "Video and creator content", PackageName: "com.google.android.youtube"),
+        new("YouTube Kids", "Entertainment", "Family-focused video app", PackageName: "com.google.android.apps.youtube.kids"),
+        new("Play Store", "Store", "Android app marketplace", PackageName: "com.android.vending"),
+        new("Chrome", "Productivity", "Web browser", PackageName: "com.android.chrome"),
         new("Files", "System", "File manager"),
         new("Camera", "System", "Camera app"),
         new("Settings", "System", "Android settings")
@@ -56,6 +57,11 @@ public partial class MainWindow : Window
         InitializeComponent();
         RuntimeStatusText.Text = "Waiting for detection";
         UpdateHomeAppTiles();
+    }
+
+    private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        BlueStacksWindowHost.Detach();
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -142,6 +148,9 @@ public partial class MainWindow : Window
     {
         if (sender is not Button button || button.Tag is not string page)
             return;
+
+        if (PlayPage.Visibility == Visibility.Visible)
+            ReturnFromPlayView(navigateHome: false);
 
         PageTitle.Text = page;
         PageSubtitle.Text = page switch
@@ -579,6 +588,40 @@ public partial class MainWindow : Window
     private Border CreateAppCard(AppEntry app)
     {
         var content = new StackPanel();
+        var fallback = new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(app.Name) ? "?" : app.Name[..1].ToUpperInvariant(),
+            FontSize = 19,
+            FontWeight = FontWeights.Bold,
+            Foreground = (Brush)FindResource("AccentBrush"),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var logoImage = new Image
+        {
+            Width = 44,
+            Height = 44,
+            Stretch = Stretch.Uniform,
+            Visibility = Visibility.Collapsed
+        };
+        var logoSurface = new Grid
+        {
+            Width = 54,
+            Height = 54,
+            Children = { fallback, logoImage }
+        };
+        content.Children.Add(new Border
+        {
+            Width = 60,
+            Height = 60,
+            CornerRadius = new CornerRadius(12),
+            Background = (Brush)FindResource("ElevatedBrush"),
+            Padding = new Thickness(3),
+            Margin = new Thickness(0, 0, 0, 12),
+            Child = logoSurface
+        });
+        if (!string.IsNullOrWhiteSpace(app.PackageName))
+            _ = LoadWebsiteLogoAsync(app.PackageName, logoImage, fallback);
         content.Children.Add(new TextBlock
         {
             Text = app.Name,
@@ -627,6 +670,17 @@ public partial class MainWindow : Window
             Background = (Brush)FindResource("SurfaceBrush"),
             Child = content
         };
+    }
+
+    private async Task LoadWebsiteLogoAsync(string packageName, Image image, TextBlock fallback)
+    {
+        var logo = await _websiteLogoService.GetLogoAsync(packageName);
+        if (logo is null)
+            return;
+
+        image.Source = logo;
+        image.Visibility = Visibility.Visible;
+        fallback.Visibility = Visibility.Collapsed;
     }
 
     private Button CreateFilterButton(string label) => new()
@@ -716,6 +770,7 @@ public partial class MainWindow : Window
         {
             _adbError = null;
             RuntimeStatusText.Text = $"ADB launch request accepted · {packageName}";
+            await ShowEmbeddedPlayerAsync(packageName);
         }
         else
         {
@@ -728,6 +783,71 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task ShowEmbeddedPlayerAsync(string packageName)
+    {
+        var app = GetLiveApps().FirstOrDefault(item =>
+            string.Equals(item.PackageName, packageName, StringComparison.OrdinalIgnoreCase));
+        var displayName = app?.Name ?? packageName;
+
+        PlayingAppTitle.Text = displayName;
+        PlayingStatusText.Text = "Waiting for the BlueStacks player window…";
+        PageTitle.Text = "Now playing";
+        PageSubtitle.Text = $"Running {displayName} inside JoyLauncher through BlueStacks.";
+        MainContentScrollViewer.Visibility = Visibility.Collapsed;
+        PlayPage.Visibility = Visibility.Visible;
+
+        await Task.Delay(150);
+        await TryEmbedRunningPlayerAsync();
+    }
+
+    private async Task TryEmbedRunningPlayerAsync()
+    {
+        PlayingStatusText.Text = "Attaching the BlueStacks window to JoyLauncher…";
+        string? lastError = null;
+
+        for (var attempt = 0; attempt < 40; attempt++)
+        {
+            var playerWindow = BlueStacksWindowLocator.FindMainPlayerWindow(_discoveryResult?.PlayerPath);
+            if (playerWindow != IntPtr.Zero)
+            {
+                if (BlueStacksWindowHost.TryAttach(playerWindow, out lastError))
+                {
+                    PlayingStatusText.Text = "BlueStacks is embedded. Click the game area to focus controls.";
+                    RuntimeStatusText.Text = "Game running inside JoyLauncher";
+                    _adbError = null;
+                    return;
+                }
+            }
+
+            await Task.Delay(300);
+        }
+
+        _adbError = lastError ??
+            "The app launch request was accepted, but the BlueStacks player window could not be found for embedding.";
+        PlayingStatusText.Text = "Embedding did not work on this BlueStacks window. The game may still be open in its separate BlueStacks window. You can retry or return to JoyLauncher.";
+        RuntimeStatusText.Text = "Game opened · embedding unavailable";
+    }
+
+    private async void RetryEmbedding_Click(object sender, RoutedEventArgs e)
+    {
+        await TryEmbedRunningPlayerAsync();
+    }
+
+    private void ReturnToLauncher_Click(object sender, RoutedEventArgs e)
+    {
+        ReturnFromPlayView(navigateHome: true);
+    }
+
+    private void ReturnFromPlayView(bool navigateHome)
+    {
+        BlueStacksWindowHost.Detach();
+        PlayPage.Visibility = Visibility.Collapsed;
+        MainContentScrollViewer.Visibility = Visibility.Visible;
+
+        if (navigateHome)
+            Navigation_Click(new Button { Tag = "Home" }, new RoutedEventArgs());
+    }
+
     private async void LaunchFeatured_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: string packageName })
@@ -738,6 +858,13 @@ public partial class MainWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Escape && PlayPage.Visibility == Visibility.Visible)
+        {
+            ReturnFromPlayView(navigateHome: true);
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.F11)
         {
             ToggleFullscreen();
