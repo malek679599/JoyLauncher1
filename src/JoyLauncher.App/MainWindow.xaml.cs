@@ -490,6 +490,8 @@ public partial class MainWindow : Window
             endpoints,
             $"Connected device: {_connectedDeviceSerial ?? "Not connected"}",
             $"Installed package count: {_installedPackages.Count}",
+            $"BlueStacks window embedded in JoyLauncher: {BlueStacksWindowHost.IsAttached}",
+            $"Play page visible: {PlayPage.Visibility == Visibility.Visible}",
             $"Latest ADB error: {_adbError ?? "None"}"
         ]);
 
