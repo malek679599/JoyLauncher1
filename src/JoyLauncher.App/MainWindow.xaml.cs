@@ -55,6 +55,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         RuntimeStatusText.Text = "Waiting for detection";
+        UpdateHomeAppTiles();
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -85,6 +86,7 @@ public partial class MainWindow : Window
         }
 
         UpdateFeaturedMinecraftState();
+        UpdateHomeAppTiles();
         if (DynamicPageContent.Visibility == Visibility.Visible)
             DynamicPageContent.Content = BuildPage(PageTitle.Text);
     }
@@ -126,6 +128,7 @@ public partial class MainWindow : Window
         }
 
         UpdateFeaturedMinecraftState();
+        UpdateHomeAppTiles();
         DynamicPageContent.Content = PageTitle.Text switch
         {
             "Library" => BuildLibraryPage(),
@@ -467,6 +470,26 @@ public partial class MainWindow : Window
             Foreground = (Brush)Application.Current.Resources["SecondaryTextBrush"],
             Margin = new Thickness(0, 0, 0, 14)
         });
+    }
+
+    private void UpdateHomeAppTiles()
+    {
+        HomeAppGrid.Children.Clear();
+        var hasLiveApps = _connectedDeviceSerial is not null;
+        var apps = hasLiveApps ? GetLiveApps().Take(6).ToArray() : SampleApps.Take(3).ToArray();
+
+        HomeAppsLabel.Text = hasLiveApps
+            ? $"{_installedPackages.Count} INSTALLED PACKAGES"
+            : "SAMPLE APPS";
+
+        foreach (var app in apps)
+            HomeAppGrid.Children.Add(CreateAppCard(app));
+
+        HomeAppNotice.Text = hasLiveApps
+            ? apps.Length == 0
+                ? "ADB is connected, but no packages were returned. Refresh the connection or check the Android runtime."
+                : $"Showing {apps.Length} of {_installedPackages.Count} packages returned by the connected BlueStacks instance."
+            : "These are sample tiles, not verified installed apps. Connect BlueStacks ADB to load your actual library.";
     }
 
     private IReadOnlyList<AppEntry> GetLiveApps() =>
