@@ -30,7 +30,7 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher will use s
 
 ## Current status
 
-**Phase 0 — Project foundation.** Product requirements, architecture boundaries, roadmap, and test strategy are documented. No Windows build or BlueStacks integration has yet been verified.
+**Phase 1 — Initial WPF shell committed.** The solution, navigation shell, initial Home layout, and Windows CI build workflow are in the repository. The build workflow has not yet been observed running successfully, and BlueStacks integration is not implemented.
 
 ## Build and test policy
 
