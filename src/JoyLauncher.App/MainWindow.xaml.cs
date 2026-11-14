@@ -367,9 +367,9 @@ public partial class MainWindow : Window
                     HorizontalAlignment = HorizontalAlignment.Left,
                     Margin = new Thickness(0, 0, 0, 8),
                     Padding = new Thickness(14, 10, 14, 10),
-                    Background = (Brush)FindResource("AccentSoftBrush"),
-                    Click = ConnectAndScan_Click
+                    Background = (Brush)FindResource("AccentSoftBrush")
                 };
+                connectButton.Click += ConnectAndScan_Click;
                 root.Children.Add(connectButton);
             }
         }
