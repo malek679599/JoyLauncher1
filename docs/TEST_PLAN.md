@@ -34,9 +34,12 @@ A later timeout-cleanup and documentation commit has its own CI run. Do not trea
 | Discovery | Multiple configured BlueStacks instances | Each discovered endpoint is shown separately |
 | ADB | ADB disabled in BlueStacks | Clear instructions to enable it; no false connected state |
 | ADB | Select a configured endpoint | ADB connects and the exact selected serial is confirmed as ready |
-| Library | Successful package query | Library shows only package IDs returned by the connected runtime |
+| Library | Successful package query | Library shows only package IDs returned by the connected runtime, with known friendly labels where mapped |
 | Library | Package query returns no entries | Empty live state is shown; sample cards are not presented as installed |
-| Search | Search a verified package identifier | Matching live package entries appear |
+| Category pages | Games and Entertainment after connection | Pages filter live package data instead of showing sample tiles |
+| Search | Search a verified package identifier or mapped app name | Matching live package entries appear |
+| Minecraft | Exact Minecraft package ID is present | Featured Minecraft action becomes enabled and targets the verified package |
+| Minecraft | Package ID is absent | Featured Minecraft action stays disabled and explains the requirement |
 | Launch | Launch a package returned by the live query | ADB launch command result is reported; command acceptance is not overstated as proof of app startup |
 | Failure | ADB missing or unreachable | Clear diagnostic; launcher remains usable |
 | Failure | ADB command times out | Process is stopped and UI remains responsive |
