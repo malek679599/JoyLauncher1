@@ -20,9 +20,9 @@
 
 ## Phase 2 — Art and design system
 - [x] Define the initial dark navy/blue color, spacing, radius, and typography tokens.
-- [x] Create reusable app tile, action button, and navigation item components in Figma.
-- [x] Create editable Home and Library screen layouts in Figma.
-- [x] Create original abstract Minecraft-feature artwork placeholder from editable shapes.
+- [x] Create the Figma workspace, Foundations and Components pages, design tokens, text styles, and an AppTile component.
+- [ ] Complete and review the Home and Library screen compositions in Figma (blocked by current Figma automation allowance).
+- [ ] Create approved feature artwork and transfer it into the WPF shell.
 - [ ] Finalize original JoyLauncher logo and Windows app icon.
 - [ ] Add production app icons and replacement-ready feature artwork.
 - [ ] Verify contrast and readability at common desktop resolutions.
@@ -52,12 +52,11 @@
 
 ## Phase 5 — Quality and release
 - [x] Add a Windows GitHub Actions Release build workflow.
-- [x] Verify Windows CI Release builds succeeded through commit `d4e9aa2` (run #19).
-- [ ] Confirm later timeout-cleanup and documentation commits also pass CI.
+- [x] Verify the latest Windows CI Release build and self-contained publish passed for commit `6b79504` (run #42).
 - [ ] Run a Release build on the user's Windows machine.
 - [ ] Test against the user's installed BlueStacks 5.
 - [ ] Test keyboard navigation and failure recovery.
-- [ ] Add automated tests for runtime discovery and app metadata.
+- [ ] Add automated tests for runtime discovery, package metadata, and launchability.
 - [ ] Package a versioned Windows build.
 - [ ] Publish release notes and known limitations.
 
@@ -72,7 +71,7 @@
 
 ## Current boundaries
 
-- Home sample tiles are demonstration data; the Library switches to verified package identifiers only after a successful ADB query.
-- The featured Minecraft Home button remains a placeholder until Minecraft is matched to a verified package.
-- BlueStacks discovery and ADB package/launch code are implemented but still require local BlueStacks validation.
-- Figma Starter currently limits this workspace to three pages and has reached its Figma MCP call allowance for this session. Home and Library screens, Components, and Foundations are preserved; a separate Settings screen remains a later design task.
+- Before a successful ADB query, the Home view uses clearly labelled preview content. After connection, app cards are based on package IDs returned by the selected BlueStacks instance.
+- The featured Minecraft action is enabled only when the exact Minecraft package ID is present in that live package list.
+- BlueStacks discovery, ADB package enumeration, and launch requests compile and publish in CI, but still require local BlueStacks validation. Package enumeration does not yet prove that every listed package has a launchable activity.
+- The Figma workspace currently contains Foundations and Components pages, design tokens, text styles, and an AppTile component. A complete Home/Library composition has not yet been completed; further Figma automation was blocked by the workspace's current usage allowance.
