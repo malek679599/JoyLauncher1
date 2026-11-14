@@ -36,15 +36,20 @@
 - [x] Connect to a selected endpoint and list verified Android package identifiers.
 - [x] Add launch requests for packages returned by the live ADB query.
 - [x] Add bounded ADB command timeouts and process cleanup.
+- [x] Add best-effort BlueStacks player window hosting inside JoyLauncher, with a restore path when leaving Play.
+- [ ] Validate embedded rendering, input, resizing, fullscreen, and window restoration on the user's BlueStacks setup.
 - [ ] Add user-configurable fallback paths.
-- [ ] Test discovery and ADB connection against the user's BlueStacks installation.
-- [ ] Resolve friendly app names, icons, and category metadata.
+- [x] Test discovery and ADB connection against the user's BlueStacks installation (user-confirmed).
+
+- [x] Add a first-pass publisher website favicon catalog for known packages, with initials as a local fallback.
+- [ ] Resolve remaining friendly app names, native app icons, and category metadata.
 
 ## Phase 4 — Library experience
 - [x] Build preview app cards, category filters, and sample search.
 - [x] Populate the Library with package identifiers after a successful ADB package query.
 - [x] Allow launch requests only for verified package identifiers.
-- [ ] Resolve friendly app names and icons.
+- [x] Add publisher website favicons for the initial known-package set.
+- [ ] Resolve remaining app names and higher-quality app-specific icons.
 - [ ] Search, sort, pin, favourite, and filter discovered apps.
 - [ ] Add recent-app tracking where reliable.
 - [ ] Match Minecraft to the correct verified package without relying on an unverified guess.
@@ -73,5 +78,5 @@
 
 - Before a successful ADB query, the Home view uses clearly labelled preview content. After connection, app cards are based on package IDs returned by the selected BlueStacks instance.
 - The featured Minecraft action is enabled only when the exact Minecraft package ID is present in that live package list.
-- BlueStacks discovery, ADB package enumeration, and launch requests compile and publish in CI, but still require local BlueStacks validation. Package enumeration does not yet prove that every listed package has a launchable activity.
+- User-confirmed local validation covers the launcher opening and ADB connection. The new in-launcher external-window host compiles in CI but still needs local testing; package enumeration does not prove that every listed package has a launchable activity. Window re-parenting is best-effort and is not a BlueStacks-supported embed API.
 - The Figma workspace currently contains Foundations and Components pages, design tokens, text styles, and an AppTile component. A complete Home/Library composition has not yet been completed; further Figma automation was blocked by the workspace's current usage allowance.
