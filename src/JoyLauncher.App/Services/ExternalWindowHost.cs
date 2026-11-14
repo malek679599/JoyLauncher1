@@ -152,7 +152,10 @@ public sealed class ExternalWindowHost : HwndHost
             ShowWindow(windowHandle, SwRestore);
 
         if (!RefreshDockedPosition(out error))
-            return FailDocking(error, out error);
+        {
+            var dockingError = error;
+            return FailDocking(dockingError, out error);
+        }
 
         LastDockingDiagnostic =
             $"Docked top-level HWND 0x{windowHandle.ToInt64():X} over Play surface HWND 0x{_hostHandle.ToInt64():X}. " +
@@ -182,7 +185,7 @@ public sealed class ExternalWindowHost : HwndHost
                 bounds.Top,
                 width,
                 height,
-                SwpNoActivate | SwpShowWindow | 0x0200))
+                SwpNoActivate | SwpFrameChanged | SwpShowWindow | 0x0200))
         {
             LastDockingDiagnostic = $"SetWindowPos could not dock the player: {LastWin32Error()}";
             return false;
