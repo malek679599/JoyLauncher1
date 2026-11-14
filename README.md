@@ -48,14 +48,17 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 - Reads per-instance ADB ports from the local BlueStacks configuration file.
 - Lets the user select a discovered instance and request an ADB connection.
 - Lists package identifiers returned by the connected Android runtime.
-- Provides a launch action only for package identifiers returned by the live ADB package list.
+- Resolves friendly names and categories for a small set of well-known Android package IDs; unknown packages remain identifiable by their package suffix and full ID.
+- Uses live package data in Library, Games, Entertainment, and Search.
+- Enables the featured Minecraft action only when the exact Minecraft Android package ID is present in the verified package list.
+- Provides launch actions only for package identifiers returned by the live ADB package list.
 - Uses process argument lists instead of shell command concatenation and applies command timeouts.
 
 **Still incomplete**
 
 - This code has not yet been tested against the user's local BlueStacks installation.
-- Friendly app names, app icons, category detection, recent activity, and persistent pinning.
-- Automatic identification of the Minecraft package; the featured Home button remains a clearly explained placeholder.
+- Broader app-name and icon metadata, launcher-activity detection, recent activity, and persistent pinning.
+- Full Minecraft package/activity verification and end-to-end local launch testing.
 - Full keyboard/gamepad navigation, fullscreen kiosk behavior, local JSON preferences, and a packaged installer.
 
 Sample app cards are demonstration data. They are not evidence that those apps are installed. Live package identifiers are shown as verified only after a successful ADB package query.
