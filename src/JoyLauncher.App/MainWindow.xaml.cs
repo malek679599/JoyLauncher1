@@ -439,11 +439,64 @@ public partial class MainWindow : Window
             "PACKAGE METADATA",
             "Resolve friendly app names and icons, classify apps, and add a verified Minecraft package match. The current launch buttons use package IDs returned by ADB."));
 
+        var copyDiagnostics = new Button
+        {
+            Content = "Copy diagnostics",
+            Width = 180,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 8, 0, 18),
+            Padding = new Thickness(14, 10, 14, 10),
+            Background = (Brush)FindResource("AccentSoftBrush"),
+            Foreground = (Brush)FindResource("PrimaryTextBrush"),
+            ToolTip = "Copy non-sensitive runtime details and the latest ADB error"
+        };
+        copyDiagnostics.Click += CopyDiagnostics_Click;
+        root.Children.Add(copyDiagnostics);
+
         root.Children.Add(CreateInfoCard(
             "Preferences",
             "PLANNED",
             "Fullscreen startup, last-opened page, keyboard navigation, controller navigation, and local appearance preferences."));
         return root;
+    }
+
+    private void CopyDiagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        var result = _discoveryResult;
+        var endpoints = result?.AdbEndpoints.Count > 0
+            ? string.Join(Environment.NewLine, result.AdbEndpoints.Select(endpoint =>
+                $"- {endpoint.InstanceName}: {endpoint.Host}:{endpoint.Port}"))
+            : "- None detected";
+
+        var report = string.Join(Environment.NewLine,
+        [
+            "JoyLauncher diagnostics",
+            $"Timestamp (local): {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}",
+            $"Windows version: {Environment.OSVersion.VersionString}",
+            $"BlueStacks player running: {result?.PlayerRunning.ToString() ?? "Not scanned"}",
+            $"BlueStacks player path found: {result?.PlayerFound.ToString() ?? "Not scanned"}",
+            $"ADB executable found: {result?.AdbExecutableFound.ToString() ?? "Not scanned"}",
+            $"ADB executable path: {result?.AdbPath ?? "Not found"}",
+            "Configured ADB endpoints:",
+            endpoints,
+            $"Connected device: {_connectedDeviceSerial ?? "Not connected"}",
+            $"Installed package count: {_installedPackages.Count}",
+            $"Latest ADB error: {_adbError ?? "None"}"
+        ]);
+
+        try
+        {
+            Clipboard.SetText(report);
+            RuntimeStatusText.Text = "Diagnostics copied";
+        }
+        catch (Exception exception) when (
+            exception is System.Runtime.InteropServices.ExternalException or
+            System.InvalidOperationException or
+            System.Threading.ThreadStateException)
+        {
+            RuntimeStatusText.Text = "Could not copy diagnostics";
+            _adbError = $"Clipboard copy failed: {exception.Message}";
+        }
     }
 
     private StackPanel CreatePageStack() => new()
