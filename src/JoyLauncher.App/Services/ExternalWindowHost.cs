@@ -3,14 +3,13 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
-using System.Windows.Media;
 
 namespace JoyLauncher.App.Services;
 
 /// <summary>
-/// Hosts a separate BlueStacks top-level window inside a WPF surface.
-/// This is a best-effort integration: BlueStacks updates or window changes
-/// can make external-window hosting unavailable, so callers must keep a fallback.
+/// Best-effort host for the separate BlueStacks player window.
+/// BlueStacks does not expose a supported embedding API; callers must retain
+/// a standalone-player fallback and must never assume re-parenting will work.
 /// </summary>
 public sealed class ExternalWindowHost : HwndHost
 {
@@ -42,10 +41,16 @@ public sealed class ExternalWindowHost : HwndHost
     public ExternalWindowHost()
     {
         Focusable = true;
-        SizeChanged += (_, _) => ResizeEmbeddedWindow();
+        SizeChanged += (_, _) =>
+        {
+            if (!TryResizeEmbeddedWindow(out var error))
+                LastAttachDiagnostic = error;
+        };
     }
 
     public bool IsAttached => _embeddedWindow != IntPtr.Zero && IsWindow(_embeddedWindow);
+    public IntPtr EmbeddedWindowHandle => IsAttached ? _embeddedWindow : IntPtr.Zero;
+    public string? LastAttachDiagnostic { get; private set; }
 
     protected override HandleRef BuildWindowCore(HandleRef hwndParent)
     {
@@ -80,24 +85,16 @@ public sealed class ExternalWindowHost : HwndHost
     public bool TryAttach(IntPtr windowHandle, out string error)
     {
         error = string.Empty;
+        LastAttachDiagnostic = null;
 
         if (windowHandle == IntPtr.Zero || !IsWindow(windowHandle))
-        {
-            error = "The BlueStacks player window is no longer available.";
-            return false;
-        }
+            return FailAttach("The selected BlueStacks window handle is no longer valid.", out error);
 
         if (_hostHandle == IntPtr.Zero || !IsWindow(_hostHandle))
-        {
-            error = "The in-launcher game surface is not ready. Retry after the Play page appears.";
-            return false;
-        }
+            return FailAttach("The JoyLauncher Play surface has not created its native host window yet.", out error);
 
         if (_embeddedWindow == windowHandle && IsAttached)
-        {
-            ResizeEmbeddedWindow();
-            return true;
-        }
+            return TryResizeEmbeddedWindow(out error);
 
         Detach();
 
@@ -109,31 +106,34 @@ public sealed class ExternalWindowHost : HwndHost
 
         var childStyle = (_originalStyle.ToInt64() & ~(WsPopup | WsOverlappedWindow)) |
                          WsChild | WsVisible | WsClipSiblings;
-
         var childExStyle = (_originalExStyle.ToInt64() & ~WsExAppWindow) | WsExToolWindow;
 
-        SetWindowLongPtr(windowHandle, GwlStyle, new IntPtr(childStyle));
-        SetWindowLongPtr(windowHandle, GwlExStyle, new IntPtr(childExStyle));
-        SetParent(windowHandle, _hostHandle);
+        if (!TrySetWindowLongPtr(windowHandle, GwlStyle, new IntPtr(childStyle), out var styleError))
+            return FailAttach($"Could not change the BlueStacks window style: {styleError}", out error);
 
-        if (GetParent(windowHandle) != _hostHandle)
+        if (!TrySetWindowLongPtr(windowHandle, GwlExStyle, new IntPtr(childExStyle), out var exStyleError))
+            return FailAttach($"Could not change the BlueStacks extended window style: {exStyleError}", out error);
+
+        // SetParent can legitimately return a null previous parent, so verify the
+        // resulting parent and capture the Win32 error rather than trusting return alone.
+        Marshal.SetLastPInvokeError(0);
+        _ = SetParent(windowHandle, _hostHandle);
+        var setParentError = Marshal.GetLastPInvokeError();
+        var actualParent = GetParent(windowHandle);
+
+        if (actualParent != _hostHandle)
         {
-            error = "Windows did not allow the BlueStacks window to be attached to JoyLauncher.";
-            Detach();
-            return false;
+            var reason = setParentError == 0
+                ? "Windows returned a different parent without reporting a Win32 error."
+                : FormatWin32Error(setParentError);
+            return FailAttach($"Windows rejected SetParent for the BlueStacks player window: {reason}", out error);
         }
 
-        SetWindowPos(
-            windowHandle,
-            IntPtr.Zero,
-            0,
-            0,
-            1,
-            1,
-            SwpNoZOrder | SwpNoActivate | SwpFrameChanged | SwpShowWindow);
+        if (!TryResizeEmbeddedWindow(out var resizeError))
+            return FailAttach($"The window was re-parented, but could not be sized inside JoyLauncher: {resizeError}", out error);
 
-        ResizeEmbeddedWindow();
         FocusEmbeddedWindow();
+        LastAttachDiagnostic = $"Attached HWND 0x{windowHandle.ToInt64():X}; host HWND 0x{_hostHandle.ToInt64():X}.";
         return true;
     }
 
@@ -175,25 +175,68 @@ public sealed class ExternalWindowHost : HwndHost
         _originalExStyle = IntPtr.Zero;
     }
 
-    private void ResizeEmbeddedWindow()
+    private bool TryResizeEmbeddedWindow(out string error)
     {
+        error = string.Empty;
+
         if (!IsAttached || _hostHandle == IntPtr.Zero)
-            return;
+        {
+            error = "The external window is not attached to the host surface.";
+            return false;
+        }
 
         if (!GetClientRect(_hostHandle, out var rect))
-            return;
+        {
+            error = $"GetClientRect failed: {FormatWin32Error(Marshal.GetLastWin32Error())}";
+            return false;
+        }
 
         var width = Math.Max(1, rect.Right - rect.Left);
         var height = Math.Max(1, rect.Bottom - rect.Top);
-        SetWindowPos(
-            _embeddedWindow,
-            IntPtr.Zero,
-            0,
-            0,
-            width,
-            height,
-            SwpNoZOrder | SwpNoActivate | SwpShowWindow);
+        if (!SetWindowPos(
+                _embeddedWindow,
+                IntPtr.Zero,
+                0,
+                0,
+                width,
+                height,
+                SwpNoZOrder | SwpNoActivate | SwpShowWindow))
+        {
+            error = $"SetWindowPos failed: {FormatWin32Error(Marshal.GetLastWin32Error())}";
+            return false;
+        }
+
+        return true;
     }
+
+    private bool FailAttach(string message, out string error)
+    {
+        error = message;
+        LastAttachDiagnostic = message;
+        Detach();
+        return false;
+    }
+
+    private static bool TrySetWindowLongPtr(IntPtr window, int index, IntPtr value, out string error)
+    {
+        Marshal.SetLastPInvokeError(0);
+        var previousValue = SetWindowLongPtr(window, index, value);
+        var lastError = Marshal.GetLastPInvokeError();
+
+        if (previousValue == IntPtr.Zero && lastError != 0)
+        {
+            error = FormatWin32Error(lastError);
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
+    }
+
+    private static string FormatWin32Error(int errorCode) =>
+        errorCode == 0
+            ? "Windows did not provide an extended error code."
+            : $"Win32 error {errorCode}: {new Win32Exception(errorCode).Message}";
 
     private static IntPtr GetWindowLongPtr(IntPtr hWnd, int index) =>
         IntPtr.Size == 8
@@ -207,18 +250,9 @@ public sealed class ExternalWindowHost : HwndHost
 
     [DllImport("user32.dll", EntryPoint = "CreateWindowExW", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr CreateWindowEx(
-        int exStyle,
-        string className,
-        string windowName,
-        int style,
-        int x,
-        int y,
-        int width,
-        int height,
-        IntPtr parent,
-        IntPtr menu,
-        IntPtr instance,
-        IntPtr parameter);
+        int exStyle, string className, string windowName, int style,
+        int x, int y, int width, int height, IntPtr parent,
+        IntPtr menu, IntPtr instance, IntPtr parameter);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyWindow(IntPtr hWnd);
@@ -246,13 +280,7 @@ public sealed class ExternalWindowHost : HwndHost
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(
-        IntPtr hWnd,
-        IntPtr insertAfter,
-        int x,
-        int y,
-        int width,
-        int height,
-        uint flags);
+        IntPtr hWnd, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool GetClientRect(IntPtr hWnd, out NativeRect rect);
