@@ -22,6 +22,8 @@ public partial class MainWindow : Window
     private string? _launchabilityDetectionError;
     private string? _connectedDeviceSerial;
     private string? _adbError;
+    private string? _windowEmbeddingDiagnostic;
+    private string? _windowDiscoveryDiagnostic;
     private bool _isFullscreen;
     private WindowStyle _previousWindowStyle;
     private ResizeMode _previousResizeMode;
@@ -475,6 +477,15 @@ public partial class MainWindow : Window
                     : _launchabilityDetectionError ?? "Android launcher-activity discovery is unavailable. Installed packages are shown as a fallback."));
 
         root.Children.Add(CreateInfoCard(
+            "BlueStacks window embedding",
+            BlueStacksWindowHost.IsAttached ? "ATTACHED" : PlayPage.Visibility == Visibility.Visible ? "NOT ATTACHED" : "NOT ACTIVE",
+            string.Join(Environment.NewLine, new[]
+            {
+                _windowEmbeddingDiagnostic ?? "No embedding attempt has been recorded in this session.",
+                _windowDiscoveryDiagnostic ?? string.Empty
+            }.Where(value => !string.IsNullOrWhiteSpace(value)))));
+        
+        root.Children.Add(CreateInfoCard(
             "Next integration step",
             "PACKAGE METADATA",
             "Resolve friendly app names and icons, classify apps, and add a verified Minecraft package match. The current launch buttons use package IDs returned by ADB."));
@@ -525,8 +536,11 @@ public partial class MainWindow : Window
             $"Launchability detection available: {_launchabilityDetectionAvailable}",
             $"Launchability detection detail: {_launchabilityDetectionError ?? "None"}",
             $"BlueStacks window embedded in JoyLauncher: {BlueStacksWindowHost.IsAttached}",
+            $"Embedded window handle: {(BlueStacksWindowHost.EmbeddedWindowHandle == IntPtr.Zero ? "None" : $"0x{BlueStacksWindowHost.EmbeddedWindowHandle.ToInt64():X}")}",
+            $"Window embedding detail: {_windowEmbeddingDiagnostic ?? "None"}",
+            $"Window discovery detail: {_windowDiscoveryDiagnostic ?? "None"}",
             $"Play page visible: {PlayPage.Visibility == Visibility.Visible}",
-            $"Latest ADB error: {_adbError ?? "None"}"
+            $"Latest runtime error: {_adbError ?? "None"}"
         ]);
 
         try
@@ -840,30 +854,47 @@ public partial class MainWindow : Window
 
     private async Task TryEmbedRunningPlayerAsync()
     {
-        PlayingStatusText.Text = "Attaching the BlueStacks window to JoyLauncher…";
-        string? lastError = null;
+        PlayingStatusText.Text = "Locating the BlueStacks player window…";
+        _windowEmbeddingDiagnostic = null;
+        _windowDiscoveryDiagnostic = null;
 
+        string? attachError = null;
         for (var attempt = 0; attempt < 40; attempt++)
         {
-            var playerWindow = BlueStacksWindowLocator.FindMainPlayerWindow(_discoveryResult?.PlayerPath);
+            var playerWindow = BlueStacksWindowLocator.FindMainPlayerWindow(
+                _discoveryResult?.PlayerPath,
+                out var discoveryDiagnostic);
+            _windowDiscoveryDiagnostic = discoveryDiagnostic;
+
             if (playerWindow != IntPtr.Zero)
             {
-                if (BlueStacksWindowHost.TryAttach(playerWindow, out lastError))
+                PlayingStatusText.Text = "BlueStacks window found · checking Windows window attachment…";
+                if (BlueStacksWindowHost.TryAttach(playerWindow, out attachError))
                 {
-                    PlayingStatusText.Text = "BlueStacks is embedded. Click the game area to focus controls.";
-                    RuntimeStatusText.Text = "Game running inside JoyLauncher";
+                    _windowEmbeddingDiagnostic = BlueStacksWindowHost.LastAttachDiagnostic;
+                    PlayingStatusText.Text = "Window attached. Click the game area to focus controls.";
+                    RuntimeStatusText.Text = "BlueStacks window attached to JoyLauncher";
                     _adbError = null;
                     return;
                 }
+
+                // A concrete Win32 attach error is not fixed by repeating the
+                // same SetParent operation dozens of times. Keep the error and
+                // allow the user to retry after changing the BlueStacks state.
+                break;
             }
 
             await Task.Delay(300);
         }
 
-        _adbError = lastError ??
-            "The app launch request was accepted, but the BlueStacks player window could not be found for embedding.";
-        PlayingStatusText.Text = "Embedding did not work on this BlueStacks window. The game may still be open in its separate BlueStacks window. You can retry or return to JoyLauncher.";
+        _windowEmbeddingDiagnostic = attachError ??
+            "No attach attempt was possible because no matching BlueStacks player window was located.";
+        _adbError = _windowEmbeddingDiagnostic;
+        var detail = attachError ?? _windowDiscoveryDiagnostic ?? "No additional Windows window details are available.";
+        PlayingStatusText.Text = $"Embedding failed: {detail}";
         RuntimeStatusText.Text = "Game opened · embedding unavailable";
+        if (DynamicPageContent.Visibility == Visibility.Visible)
+            DynamicPageContent.Content = BuildPage(PageTitle.Text);
     }
 
     private async void RetryEmbedding_Click(object sender, RoutedEventArgs e)
