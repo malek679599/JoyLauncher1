@@ -60,6 +60,10 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        LocationChanged += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
+        SizeChanged += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
+        StateChanged += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
+        Activated += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
         RuntimeStatusText.Text = "Waiting for detection";
         UpdateHomeAppTiles();
     }
@@ -477,11 +481,11 @@ public partial class MainWindow : Window
                     : _launchabilityDetectionError ?? "Android launcher-activity discovery is unavailable. Installed packages are shown as a fallback."));
 
         root.Children.Add(CreateInfoCard(
-            "BlueStacks window embedding",
-            BlueStacksWindowHost.IsAttached ? "ATTACHED" : PlayPage.Visibility == Visibility.Visible ? "NOT ATTACHED" : "NOT ACTIVE",
+            "BlueStacks Play-area docking",
+            BlueStacksWindowHost.IsDocked ? "DOCKED" : PlayPage.Visibility == Visibility.Visible ? "NOT DOCKED" : "NOT ACTIVE",
             string.Join(Environment.NewLine, new[]
             {
-                _windowEmbeddingDiagnostic ?? "No embedding attempt has been recorded in this session.",
+                _windowEmbeddingDiagnostic ?? "No player-window docking attempt has been recorded in this session.",
                 _windowDiscoveryDiagnostic ?? string.Empty
             }.Where(value => !string.IsNullOrWhiteSpace(value)))));
         
@@ -535,9 +539,9 @@ public partial class MainWindow : Window
             $"Launchable app count: {_launchablePackages.Count}",
             $"Launchability detection available: {_launchabilityDetectionAvailable}",
             $"Launchability detection detail: {_launchabilityDetectionError ?? "None"}",
-            $"BlueStacks window embedded in JoyLauncher: {BlueStacksWindowHost.IsAttached}",
-            $"Embedded window handle: {(BlueStacksWindowHost.EmbeddedWindowHandle == IntPtr.Zero ? "None" : $"0x{BlueStacksWindowHost.EmbeddedWindowHandle.ToInt64():X}")}",
-            $"Window embedding detail: {_windowEmbeddingDiagnostic ?? "None"}",
+            $"BlueStacks player docked over Play area: {BlueStacksWindowHost.IsDocked}",
+            $"Docked player window handle: {(BlueStacksWindowHost.DockedWindowHandle == IntPtr.Zero ? "None" : $"0x{BlueStacksWindowHost.DockedWindowHandle.ToInt64():X}")}",
+            $"Player-window docking detail: {_windowEmbeddingDiagnostic ?? "None"}",
             $"Window discovery detail: {_windowDiscoveryDiagnostic ?? "None"}",
             $"Play page visible: {PlayPage.Visibility == Visibility.Visible}",
             $"Latest runtime error: {_adbError ?? "None"}"
@@ -844,7 +848,7 @@ public partial class MainWindow : Window
         PlayingAppTitle.Text = displayName;
         PlayingStatusText.Text = "Waiting for the BlueStacks player window…";
         PageTitle.Text = "Now playing";
-        PageSubtitle.Text = $"Running {displayName} inside JoyLauncher through BlueStacks.";
+        PageSubtitle.Text = $"Running {displayName} in BlueStacks, docked over JoyLauncher’s Play area.";
         MainContentScrollViewer.Visibility = Visibility.Collapsed;
         PlayPage.Visibility = Visibility.Visible;
 
@@ -872,8 +876,8 @@ public partial class MainWindow : Window
                 if (BlueStacksWindowHost.TryAttach(playerWindow, out attachError))
                 {
                     _windowEmbeddingDiagnostic = BlueStacksWindowHost.LastAttachDiagnostic;
-                    PlayingStatusText.Text = "Window attached. Click the game area to focus controls.";
-                    RuntimeStatusText.Text = "BlueStacks window attached to JoyLauncher";
+                    PlayingStatusText.Text = "BlueStacks is docked over the Play area. Click the game area to focus controls.";
+                    RuntimeStatusText.Text = "Player window docked over JoyLauncher";
                     _adbError = null;
                     return;
                 }
@@ -888,10 +892,10 @@ public partial class MainWindow : Window
         }
 
         _windowEmbeddingDiagnostic = attachError ??
-            "No attach attempt was possible because no matching BlueStacks player window was located.";
+            "No dock attempt was possible because no matching BlueStacks player window was located.";
         _adbError = _windowEmbeddingDiagnostic;
         var detail = attachError ?? _windowDiscoveryDiagnostic ?? "No additional Windows window details are available.";
-        PlayingStatusText.Text = $"Embedding failed: {detail}";
+        PlayingStatusText.Text = $"Could not dock the BlueStacks player: {detail}";
         RuntimeStatusText.Text = "Game opened · embedding unavailable";
         if (DynamicPageContent.Visibility == Visibility.Visible)
             DynamicPageContent.Content = BuildPage(PageTitle.Text);
