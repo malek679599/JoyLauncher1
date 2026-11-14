@@ -5,11 +5,16 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Threading.Tasks;
+using JoyLauncher.App.Services;
 
 namespace JoyLauncher.App;
 
 public partial class MainWindow : Window
 {
+    private readonly BlueStacksDiscoveryService _blueStacksDiscovery = new();
+    private BlueStacksDiscoveryResult? _discoveryResult;
+
     private static readonly IReadOnlyList<AppEntry> SampleApps =
     [
         new("Minecraft", "Games", "Featured sandbox game"),
@@ -25,7 +30,40 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        RuntimeStatusText.Text = "Detection pending";
+        RuntimeStatusText.Text = "Waiting for detection";
+    }
+
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        await RefreshRuntimeStatusAsync();
+    }
+
+    private async Task RefreshRuntimeStatusAsync()
+    {
+        RuntimeStatusText.Text = "Scanning BlueStacks…";
+        try
+        {
+            _discoveryResult = await Task.Run(_blueStacksDiscovery.Discover);
+            RuntimeStatusText.Text = _discoveryResult switch
+            {
+                { PlayerFound: true, HasConfiguredAdbEndpoint: true } => "Installed · ADB config found",
+                { PlayerFound: true } => "Installed · enable ADB",
+                { PlayerRunning: true } => "Player running · path unavailable",
+                _ => "BlueStacks not detected"
+            };
+        }
+        catch (Exception)
+        {
+            RuntimeStatusText.Text = "Detection unavailable";
+        }
+
+        if (DynamicPageContent.Visibility == Visibility.Visible && PageTitle.Text == "Settings")
+            DynamicPageContent.Content = BuildSettingsPage();
+    }
+
+    private async void RefreshDetection_Click(object sender, RoutedEventArgs e)
+    {
+        await RefreshRuntimeStatusAsync();
     }
 
     private void Navigation_Click(object sender, RoutedEventArgs e)
@@ -200,26 +238,64 @@ public partial class MainWindow : Window
     private FrameworkElement BuildSettingsPage()
     {
         var root = CreatePageStack();
-        AddIntro(root, "Runtime and preferences", "Local settings will be saved on this Windows device.");
+        AddIntro(root, "Runtime and preferences", "Local discovery is read-only. JoyLauncher does not change BlueStacks settings.");
+
+        var result = _discoveryResult;
+        var playerState = result is null
+            ? "NOT SCANNED"
+            : result.PlayerRunning
+                ? "RUNNING"
+                : result.PlayerFound
+                    ? "INSTALLED"
+                    : "NOT DETECTED";
+        var playerDetails = result?.PlayerPath
+            ?? "No verified HD-Player.exe path found. Check that BlueStacks 5 is installed for this Windows account.";
 
         root.Children.Add(CreateInfoCard(
-            "BlueStacks detection",
-            "Pending implementation",
-            "Discover the installed player executable and configured Android Debug Bridge endpoint. Do not assume a fixed installation path or port."));
+            "BlueStacks player",
+            playerState,
+            playerDetails));
+
+        var adbState = result is null
+            ? "NOT SCANNED"
+            : result.HasConfiguredAdbEndpoint
+                ? "CONFIGURATION FOUND · NOT CONNECTED"
+                : "NO CONFIGURED ENDPOINT FOUND";
+        var adbDetails = result?.AdbEndpoints.Count > 0
+            ? string.Join(Environment.NewLine, result.AdbEndpoints.Select(endpoint =>
+                $"{endpoint.InstanceName}: {endpoint.Host}:{endpoint.Port}"))
+            : "Enable Android Debug Bridge in BlueStacks Settings → Advanced, then refresh detection. The port is read from local configuration; no fixed port is assumed.";
 
         root.Children.Add(CreateInfoCard(
-            "Installed app discovery",
-            "Not connected",
-            "Read the Android package list through the discovered ADB connection. Display package names and friendly labels only when verified."));
+            "ADB configuration",
+            adbState,
+            adbDetails));
 
         root.Children.Add(CreateInfoCard(
-            "Diagnostics",
-            "Read-only checks first",
-            "Report missing executables, unavailable ADB connections, command timeouts, and permission errors with actionable details."));
+            "ADB executable",
+            result?.AdbExecutableFound == true ? "FOUND" : "NOT FOUND",
+            result?.AdbPath ?? "The BlueStacks-bundled HD-Adb.exe or adb.exe was not found in the detected install directory."));
+
+        var refresh = new Button
+        {
+            Content = "↻   Refresh local detection",
+            Width = 220,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 4, 0, 18),
+            Background = (Brush)FindResource("AccentBrush"),
+            Foreground = Brushes.White,
+            Click = RefreshDetection_Click
+        };
+        root.Children.Add(refresh);
+
+        root.Children.Add(CreateInfoCard(
+            "Next integration step",
+            "NOT CONNECTED",
+            "After detection is verified, the next milestone will test the discovered endpoint with a time-limited ADB command, then list installed packages. No app is reported as installed or launchable before that succeeds."));
 
         root.Children.Add(CreateInfoCard(
             "Preferences",
-            "Planned",
+            "PLANNED",
             "Fullscreen startup, last-opened page, keyboard navigation, controller navigation, and local appearance preferences."));
         return root;
     }
