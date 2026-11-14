@@ -27,6 +27,32 @@ jobs:
       - name: Publish self-contained Windows x64 app
         run: dotnet publish src/JoyLauncher.App/JoyLauncher.App.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/JoyLauncher
 
+      - name: Write build provenance and SHA-256 manifest
+        shell: pwsh
+        run: |
+          $root = (Resolve-Path "artifacts/JoyLauncher").Path
+          @(
+            "Product: JoyLauncher"
+            "Target: Windows x64"
+            "Configuration: Release"
+            "Source commit: $env:GITHUB_SHA"
+            "Workflow run: $env:GITHUB_RUN_ID"
+            "Run number: $env:GITHUB_RUN_NUMBER"
+            "Built by: GitHub Actions"
+            "Code signing: Not configured; binaries are unsigned"
+          ) | Set-Content -Encoding utf8 (Join-Path $root "BUILD-INFO.txt")
+
+          $manifest = Join-Path $root "SHA256SUMS.txt"
+          $lines = Get-ChildItem -LiteralPath $root -File -Recurse |
+            Where-Object { $_.FullName -ne $manifest } |
+            Sort-Object FullName |
+            ForEach-Object {
+              $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
+              $relative = $_.FullName.Substring($root.Length + 1).Replace("\\", "/")
+              "$($hash.Hash)  $relative"
+            }
+          $lines | Set-Content -Encoding ascii $manifest
+
       - name: Upload Windows x64 build
         uses: actions/upload-artifact@v4
         with:
