@@ -18,11 +18,13 @@
 | Verified package launch request | Compiled in Windows CI; not yet tested against user's BlueStacks | `AdbClient.LaunchPackageAsync` |
 | Figma foundations and AppTile component | Created; full Home/Library composition incomplete | JoyLauncher Figma file |
 | Local Windows build | Not yet run | Requires target Windows machine |
-| Actual BlueStacks connection and app launch | Not yet verified | Requires local ADB-enabled instance |
+| Actual BlueStacks connection | User-confirmed working | User report, 14 Nov 2026 |
+| In-launcher BlueStacks window hosting | New code; not yet locally tested | `ExternalWindowHost.cs` and `BlueStacksWindowLocator.cs` |
+| Website favicon display | Implemented; network result still needs visual verification | `WebsiteLogoService.cs` |
 | Friendly app names and icons | Not implemented | Package IDs are shown for now |
 | Gamepad navigation | Not implemented | Planned |
 
-Run #42 is the latest confirmed green build for commit `6b79504`. The artifact `JoyLauncher-Windows-x64` is available from that run until 28 November 2026.
+Run #46 was the last green CI build before the embedded-window and favicon changes. Verify the latest candidate build before distribution.
 
 ## Test matrix
 
@@ -40,7 +42,13 @@ Run #42 is the latest confirmed green build for commit `6b79504`. The artifact `
 | Search | Search a verified package identifier or mapped app name | Matching live package entries appear |
 | Minecraft | Exact Minecraft package ID is present | Featured Minecraft action becomes enabled and targets the verified package |
 | Minecraft | Package ID is absent | Featured Minecraft action stays disabled and explains the requirement |
-| Launch | Launch a package returned by the live query | ADB launch command result is reported; command acceptance is not overstated as proof of app startup |
+| Launch | Launch a package returned by the live query | ADB launch command result is reported, then JoyLauncher attempts to attach the BlueStacks window |
+| Embedded play | Launch a game from a card | BlueStacks player appears in the JoyLauncher Play page |
+| Embedded play | Click Back to JoyLauncher | Player detaches and its original standalone window is restored |
+| Embedded play | Press Escape while the launcher has focus | Returns to Home and restores the standalone player window |
+| Embedded play | Resize JoyLauncher or press F11 | Embedded player resizes with the hosting surface |
+| Embedded play | Embedding is unavailable | Clear fallback text appears; Retry and Back remain usable |
+| Publisher logos | Open known app cards online | Publisher website favicons appear; failed requests leave initials visible |
 | Failure | ADB missing or unreachable | Clear diagnostic; launcher remains usable |
 | Failure | ADB command times out | Process is stopped and UI remains responsive |
 | Failure | Package cannot be launched | Clear command error; no false success |
@@ -61,7 +69,11 @@ Run #42 is the latest confirmed green build for commit `6b79504`. The artifact `
 6. Select that instance's Connect action.
 7. Open Library and confirm package identifiers appear.
 8. Launch one known installed package from its verified card.
-9. Repeat with BlueStacks closed or ADB disabled and verify useful error states.
+9. Confirm the game appears inside JoyLauncher, not only in a separate BlueStacks window.
+10. Click Back to JoyLauncher and confirm the standalone player window is restored.
+11. Resize JoyLauncher, press F11, and test keyboard/mouse input in the embedded game.
+12. Check that known publisher favicons load while online and initials remain when offline.
+13. Repeat with BlueStacks closed or ADB disabled and verify useful error states.
 
 ## Evidence required
 
