@@ -11,20 +11,20 @@
 
 | Check | Result | Evidence |
 |---|---|---|
-| Windows Release CI build and self-contained publish | Passed | GitHub Actions run #42, commit `6b79504` |
+| Windows Release CI build and self-contained publish | Passed | GitHub Actions run #54, commit `1e6fe5c` |
 | WPF shell, navigation, Library and Search | Compiled in Windows CI | Commit `d4e9aa2` |
 | BlueStacks discovery and ADB configuration parsing | Compiled in Windows CI; local behavior unverified | `BlueStacksDiscoveryService.cs` |
-| ADB endpoint connection and package enumeration | Compiled in Windows CI; not yet tested against user's BlueStacks | `AdbClient.cs` |
-| Verified package launch request | Compiled in Windows CI; not yet tested against user's BlueStacks | `AdbClient.LaunchPackageAsync` |
+| ADB endpoint connection and package enumeration | User-confirmed working locally | User report, 14 Nov 2026 |
+| ADB app launch to separate BlueStacks player | User-confirmed working; not embedded | User report, 14 Nov 2026 |
 | Figma foundations and AppTile component | Created; full Home/Library composition incomplete | JoyLauncher Figma file |
 | Local Windows build | Not yet run | Requires target Windows machine |
 | Actual BlueStacks connection | User-confirmed working | User report, 14 Nov 2026 |
 | In-launcher BlueStacks window hosting | New code; not yet locally tested | `ExternalWindowHost.cs` and `BlueStacksWindowLocator.cs` |
 | Website favicon display | Implemented; network result still needs visual verification | `WebsiteLogoService.cs` |
-| Friendly app names and icons | Not implemented | Package IDs are shown for now |
+| Known publisher website favicons | Implemented; visual/network test pending | `WebsiteLogoService.cs` |
 | Gamepad navigation | Not implemented | Planned |
 
-Run #46 was the last green CI build before the embedded-window and favicon changes. Verify the latest candidate build before distribution.
+Run #54 passed the Windows Release build and self-contained publish for the embedded-play and favicon code. The current head adds only a diagnostics-report field; its run #59 is queued. Artifact `JoyLauncher-Windows-x64` from run #54 expires 28 November 2026.
 
 ## Test matrix
 
@@ -68,8 +68,8 @@ Run #46 was the last green CI build before the embedded-window and favicon chang
 5. Refresh local detection and verify the discovered instance and endpoint.
 6. Select that instance's Connect action.
 7. Open Library and confirm package identifiers appear.
-8. Launch one known installed package from its verified card.
-9. Confirm the game appears inside JoyLauncher, not only in a separate BlueStacks window.
+8. Launch one known installed package from its verified card and confirm it opens in BlueStacks.
+9. Confirm the next candidate displays the BlueStacks player inside JoyLauncher, not only in a separate BlueStacks window.
 10. Click Back to JoyLauncher and confirm the standalone player window is restored.
 11. Resize JoyLauncher, press F11, and test keyboard/mouse input in the embedded game.
 12. Check that known publisher favicons load while online and initials remain when offline.
