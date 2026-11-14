@@ -63,45 +63,48 @@
             </DockPanel>
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="HomeContent">
-                    <Border Height="330" CornerRadius="18" Background="#142642" Padding="34" ClipToBounds="True">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.2*"/>
-                                <ColumnDefinition Width="0.8*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center" Grid.Column="0" MaxWidth="570">
-                                <TextBlock Text="FEATURED GAME" Foreground="#8DB8FF" FontSize="11" FontWeight="Bold"/>
-                                <TextBlock Text="MINECRAFT" FontSize="42" FontWeight="ExtraBold" Margin="0,13,0,8"/>
-                                <TextBlock Text="Your world. Your next adventure. Launch your Android games and apps from one unified library." TextWrapping="Wrap" Foreground="#C4D2E6" FontSize="15" LineHeight="24" MaxWidth="520"/>
-                                <Button x:Name="LaunchFeaturedButton" Content="▶   Launch Minecraft" Background="{StaticResource AccentBrush}" Padding="20,13" Margin="0,22,0,0" Width="190" HorizontalAlignment="Left" Click="LaunchFeatured_Click"/>
-                            </StackPanel>
-                            <Border Grid.Column="1" Background="#1B3558" CornerRadius="16" Margin="20,15,0,15">
-                                <Grid>
-                                    <TextBlock Text="JL" FontSize="100" FontWeight="Black" Foreground="#345985" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    <TextBlock Text="FEATURE ART PLACEHOLDER" FontSize="10" Foreground="#A8B5C9" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,18"/>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                    </Border>
+                <Grid>
+                    <StackPanel x:Name="HomeContent">
+                        <Border Height="330" CornerRadius="18" Background="#142642" Padding="34" ClipToBounds="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.2*"/>
+                                    <ColumnDefinition Width="0.8*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center" Grid.Column="0" MaxWidth="570">
+                                    <TextBlock Text="FEATURED GAME" Foreground="#8DB8FF" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Text="MINECRAFT" FontSize="42" FontWeight="ExtraBold" Margin="0,13,0,8"/>
+                                    <TextBlock Text="Your world. Your next adventure. Launch your Android games and apps from one unified library." TextWrapping="Wrap" Foreground="#C4D2E6" FontSize="15" LineHeight="24" MaxWidth="520"/>
+                                    <Button x:Name="LaunchFeaturedButton" Content="▶   Launch Minecraft" Background="{StaticResource AccentBrush}" Padding="20,13" Margin="0,22,0,0" Width="190" HorizontalAlignment="Left" Click="LaunchFeatured_Click"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#1B3558" CornerRadius="16" Margin="20,15,0,15">
+                                    <Grid>
+                                        <TextBlock Text="JL" FontSize="100" FontWeight="Black" Foreground="#345985" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBlock Text="FEATURE ART PLACEHOLDER" FontSize="10" Foreground="#A8B5C9" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,18"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
 
-                    <DockPanel Margin="0,28,0,13">
-                        <TextBlock Text="Your library" FontSize="21" FontWeight="Bold"/>
-                        <TextBlock Text="INSTALLED APPS" DockPanel.Dock="Right" Foreground="{StaticResource SecondaryTextBrush}" FontSize="10" VerticalAlignment="Center"/>
-                    </DockPanel>
-                    <UniformGrid Columns="3">
-                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,12,0">
-                            <StackPanel><TextBlock Text="Minecraft" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Featured game" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
-                        </Border>
-                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,12,0">
-                            <StackPanel><TextBlock Text="YouTube" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Entertainment" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
-                        </Border>
-                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18">
-                            <StackPanel><TextBlock Text="YouTube Kids" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Entertainment" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
-                        </Border>
-                    </UniformGrid>
-                    <TextBlock Text="These are sample tiles. The live library will be populated from BlueStacks after runtime discovery is implemented." TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" FontSize="11" Margin="0,12,0,0"/>
-                </StackPanel>
+                        <DockPanel Margin="0,28,0,13">
+                            <TextBlock Text="Your library" FontSize="21" FontWeight="Bold"/>
+                            <TextBlock Text="SAMPLE APPS" DockPanel.Dock="Right" Foreground="{StaticResource SecondaryTextBrush}" FontSize="10" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <UniformGrid Columns="3">
+                            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,12,0">
+                                <StackPanel><TextBlock Text="Minecraft" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Featured game · sample tile" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,12,0">
+                                <StackPanel><TextBlock Text="YouTube" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Entertainment · sample tile" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="18">
+                                <StackPanel><TextBlock Text="YouTube Kids" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Entertainment · sample tile" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" Margin="0,5,0,0"/></StackPanel>
+                            </Border>
+                        </UniformGrid>
+                        <TextBlock Text="These are sample tiles. The live library will be populated from BlueStacks after runtime discovery is implemented." TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" FontSize="11" Margin="0,12,0,0"/>
+                    </StackPanel>
+                    <ContentControl x:Name="DynamicPageContent" Visibility="Collapsed"/>
+                </Grid>
             </ScrollViewer>
         </Grid>
     </Grid>
