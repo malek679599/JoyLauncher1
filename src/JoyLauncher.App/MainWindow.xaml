@@ -77,10 +77,25 @@
                                     <TextBlock Text="Your world. Your next adventure. Launch your Android games and apps from one unified library." TextWrapping="Wrap" Foreground="#C4D2E6" FontSize="15" LineHeight="24" MaxWidth="520"/>
                                     <Button x:Name="LaunchFeaturedButton" Content="▶   Launch Minecraft" Background="{StaticResource AccentBrush}" Padding="20,13" Margin="0,22,0,0" Width="190" HorizontalAlignment="Left" Click="LaunchFeatured_Click"/>
                                 </StackPanel>
-                                <Border Grid.Column="1" Background="#1B3558" CornerRadius="16" Margin="20,15,0,15">
+                                <Border Grid.Column="1" Background="#142B49" CornerRadius="16" Margin="20,15,0,15" ClipToBounds="True">
                                     <Grid>
-                                        <TextBlock Text="JL" FontSize="100" FontWeight="Black" Foreground="#345985" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        <TextBlock Text="FEATURE ART PLACEHOLDER" FontSize="10" Foreground="#A8B5C9" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,18"/>
+                                        <Ellipse Width="280" Height="280" Fill="#23436D" Opacity="0.38" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Ellipse Width="220" Height="220" Stroke="#4771A4" StrokeThickness="2" Opacity="0.42" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Ellipse Width="158" Height="158" Stroke="#4771A4" StrokeThickness="2" Opacity="0.32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Viewbox Width="230" Height="230" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,10">
+                                            <Canvas Width="240" Height="240">
+                                                <Polygon Points="120,18 205,65 120,112 35,65" Fill="#78B98C"/>
+                                                <Polygon Points="35,65 120,112 120,210 35,163" Fill="#367A56"/>
+                                                <Polygon Points="120,112 205,65 205,163 120,210" Fill="#245B41"/>
+                                                <Polygon Points="52,68 78,82 78,105 52,91" Fill="#9BCFA7" Opacity="0.82"/>
+                                                <Polygon Points="91,90 111,101 111,125 91,114" Fill="#286849" Opacity="0.9"/>
+                                                <Polygon Points="139,61 165,47 165,72 139,86" Fill="#3B805A" Opacity="0.95"/>
+                                                <Polygon Points="146,128 179,110 179,139 146,157" Fill="#1B4937" Opacity="0.9"/>
+                                                <Polygon Points="52,125 83,142 83,167 52,150" Fill="#4B9467" Opacity="0.9"/>
+                                                <Polygon Points="94,155 111,164 111,188 94,179" Fill="#2A6748" Opacity="0.95"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                        <TextBlock Text="JOYLAUNCHER ORIGINAL ART" FontSize="9" FontWeight="SemiBold" Foreground="#A8B5C9" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,16"/>
                                     </Grid>
                                 </Border>
                             </Grid>
