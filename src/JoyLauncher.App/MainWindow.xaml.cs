@@ -31,6 +31,23 @@ public partial class MainWindow : Window
         new("Settings", "System", "Android settings")
     ];
 
+    private static readonly IReadOnlyDictionary<string, (string Name, string Category, string Description)> KnownPackages =
+        new Dictionary<string, (string, string, string)>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["com.mojang.minecraftpe"] = ("Minecraft", "Games", "Minecraft for Android"),
+            ["com.google.android.youtube"] = ("YouTube", "Entertainment", "Video and creator content"),
+            ["com.google.android.apps.youtube.kids"] = ("YouTube Kids", "Entertainment", "Family-focused video app"),
+            ["com.google.android.apps.youtube.music"] = ("YouTube Music", "Entertainment", "Music and audio"),
+            ["com.google.android.videos"] = ("Google TV", "Entertainment", "Movies and television"),
+            ["com.android.chrome"] = ("Chrome", "Productivity", "Web browser"),
+            ["com.google.android.gm"] = ("Gmail", "Productivity", "Email"),
+            ["com.google.android.apps.maps"] = ("Google Maps", "Productivity", "Maps and navigation"),
+            ["com.google.android.apps.photos"] = ("Google Photos", "Productivity", "Photo library"),
+            ["com.android.vending"] = ("Google Play Store", "Store", "Android app marketplace"),
+            ["com.android.settings"] = ("Android Settings", "System", "Android system settings"),
+            ["com.google.android.googlequicksearchbox"] = ("Google", "Productivity", "Search and assistant")
+        };
+
     public MainWindow()
     {
         InitializeComponent();
@@ -64,8 +81,9 @@ public partial class MainWindow : Window
             RuntimeStatusText.Text = "Detection unavailable";
         }
 
-        if (DynamicPageContent.Visibility == Visibility.Visible && PageTitle.Text == "Settings")
-            DynamicPageContent.Content = BuildSettingsPage();
+        UpdateFeaturedMinecraftState();
+        if (DynamicPageContent.Visibility == Visibility.Visible)
+            DynamicPageContent.Content = BuildPage(PageTitle.Text);
     }
 
     private async void RefreshDetection_Click(object sender, RoutedEventArgs e)
@@ -104,6 +122,7 @@ public partial class MainWindow : Window
             RuntimeStatusText.Text = $"ADB connected · {_installedPackages.Count} packages";
         }
 
+        UpdateFeaturedMinecraftState();
         DynamicPageContent.Content = PageTitle.Text switch
         {
             "Library" => BuildLibraryPage(),
@@ -151,8 +170,8 @@ public partial class MainWindow : Window
     private FrameworkElement BuildPage(string page) => page switch
     {
         "Library" => BuildLibraryPage(),
-        "Games" => BuildCategoryPage("Games", "Sample game tiles. Real entries will come from BlueStacks package discovery.", "Games"),
-        "Entertainment" => BuildCategoryPage("Entertainment", "Your video and entertainment apps, once discovered from the Android runtime.", "Entertainment"),
+        "Games" => BuildCategoryPage("Games", "Your installed Android games.", "Games"),
+        "Entertainment" => BuildCategoryPage("Entertainment", "Your installed video and entertainment apps.", "Entertainment"),
         "Search" => BuildSearchPage(),
         "Store" => BuildStorePage(),
         "Settings" => BuildSettingsPage(),
@@ -162,9 +181,7 @@ public partial class MainWindow : Window
     private FrameworkElement BuildLibraryPage()
     {
         var root = CreatePageStack();
-        var liveApps = _installedPackages
-            .Select(packageName => new AppEntry(packageName, "Installed Android package", "Discovered from BlueStacks ADB", IsVerified: true))
-            .ToArray();
+        var liveApps = GetLiveApps();
         var hasLiveApps = _connectedDeviceSerial is not null;
         var catalogue = hasLiveApps ? liveApps : SampleApps;
 
@@ -216,19 +233,31 @@ public partial class MainWindow : Window
     private FrameworkElement BuildCategoryPage(string title, string description, string category)
     {
         var root = CreatePageStack();
-        AddIntro(root, title, description);
+        var hasLiveApps = _connectedDeviceSerial is not null;
+        var apps = hasLiveApps
+            ? GetLiveApps().Where(app => app.Category == category).ToArray()
+            : SampleApps.Where(app => app.Category == category).ToArray();
+        AddIntro(root, title, hasLiveApps
+            ? $"{apps.Length} matching apps from the connected BlueStacks instance."
+            : description);
         var grid = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
-        foreach (var app in SampleApps.Where(app => app.Category == category))
+        foreach (var app in apps)
             grid.Children.Add(CreateAppCard(app));
 
         if (grid.Children.Count == 0)
-            root.Children.Add(CreateNotice("No sample entries", "This category has no preview entries yet."));
+            root.Children.Add(CreateNotice(
+                hasLiveApps ? "No matching installed apps" : "No sample entries",
+                hasLiveApps
+                    ? "No installed packages have been identified in this category yet."
+                    : "This category has no preview entries yet."));
         else
             root.Children.Add(grid);
 
         root.Children.Add(CreateNotice(
-            "Preview data only",
-            "Cards become launchable only after BlueStacks detection and Android package discovery are implemented."));
+            hasLiveApps ? "Live package data" : "Preview data only",
+            hasLiveApps
+                ? "Cards represent package identifiers returned by the connected Android runtime."
+                : "Connect BlueStacks ADB to replace preview cards with your installed apps."));
         return root;
     }
 
@@ -237,9 +266,10 @@ public partial class MainWindow : Window
         var root = CreatePageStack();
         AddIntro(root, "Search your apps", "Search the sample catalogue by app name or category.");
 
-        var searchCatalogue = _connectedDeviceSerial is not null
-            ? _installedPackages.Select(packageName => new AppEntry(packageName, "Installed Android package", "Discovered from BlueStacks ADB", IsVerified: true)).ToArray()
-            : SampleApps;
+        var searchCatalogue = _connectedDeviceSerial is not null ? GetLiveApps() : SampleApps;
+        AddIntro(root, "Search your apps", _connectedDeviceSerial is not null
+            ? "Search friendly app names, categories, or package identifiers."
+            : "Search the sample catalogue by app name or category.");
         var search = new TextBox
         {
             Height = 46,
@@ -255,7 +285,7 @@ public partial class MainWindow : Window
         var results = new WrapPanel();
         var noResults = new TextBlock
         {
-            Text = "No matching sample apps. Try another name or category.",
+            Text = "No matching apps. Try another name or category.",
             FontSize = 12,
             Foreground = (Brush)FindResource("SecondaryTextBrush"),
             Visibility = Visibility.Collapsed,
@@ -268,7 +298,8 @@ public partial class MainWindow : Window
             var query = search.Text.Trim();
             foreach (var app in searchCatalogue.Where(app =>
                          app.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                         app.Category.Contains(query, StringComparison.OrdinalIgnoreCase)))
+                         app.Category.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                         (app.PackageName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)))
                 results.Children.Add(CreateAppCard(app));
 
             noResults.Visibility = results.Children.Count == 0
@@ -283,7 +314,9 @@ public partial class MainWindow : Window
         UpdateResults();
         root.Children.Add(CreateNotice(
             "Search scope",
-            "Search currently covers preview entries only. Live results require BlueStacks package discovery."));
+            _connectedDeviceSerial is not null
+                ? "Results are based on the verified package list returned by the connected BlueStacks instance."
+                : "Search currently covers preview entries only. Connect BlueStacks ADB to search installed packages."));
         return root;
     }
 
@@ -435,6 +468,37 @@ public partial class MainWindow : Window
         });
     }
 
+    private IReadOnlyList<AppEntry> GetLiveApps() =>
+        _installedPackages.Select(packageName =>
+        {
+            if (KnownPackages.TryGetValue(packageName, out var known))
+                return new AppEntry(known.Name, known.Category, known.Description, IsVerified: true, PackageName: packageName);
+
+            var shortName = packageName.Split('.').LastOrDefault();
+            return new AppEntry(
+                string.IsNullOrWhiteSpace(shortName) ? packageName : shortName,
+                "Other",
+                packageName,
+                IsVerified: true,
+                PackageName: packageName);
+        }).ToArray();
+
+    private void UpdateFeaturedMinecraftState()
+    {
+        var minecraftPackage = _installedPackages.FirstOrDefault(packageName =>
+            string.Equals(packageName, "com.mojang.minecraftpe", StringComparison.OrdinalIgnoreCase));
+
+        LaunchFeaturedButton.IsEnabled = minecraftPackage is not null;
+        LaunchFeaturedButton.Tag = minecraftPackage;
+        LaunchFeaturedButton.Content = minecraftPackage is null
+            ? "Minecraft not detected"
+            : "▶   Launch Minecraft";
+        LaunchFeaturedButton.ToolTip = minecraftPackage is null
+            ? "Connect ADB and install Minecraft in this BlueStacks instance to enable this action."
+            : $"Launch verified package {minecraftPackage}";
+        LaunchFeaturedButton.Opacity = minecraftPackage is null ? 0.62 : 1.0;
+    }
+
     private Border CreateAppCard(AppEntry app)
     {
         var content = new StackPanel();
@@ -466,7 +530,7 @@ public partial class MainWindow : Window
             var launchButton = new Button
             {
                 Content = "Launch app",
-                Tag = app.Name,
+                Tag = app.PackageName ?? app.Name,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Padding = new Thickness(12, 7, 12, 7),
                 Margin = new Thickness(0, 12, 0, 0),
@@ -540,9 +604,18 @@ public partial class MainWindow : Window
 
     private async void LaunchVerifiedPackage_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: string packageName } ||
-            !_installedPackages.Contains(packageName, StringComparer.OrdinalIgnoreCase))
+        if (sender is Button { Tag: string packageName })
+            await LaunchPackageAsync(packageName);
+    }
+
+    private async Task LaunchPackageAsync(string packageName)
+    {
+        if (!_installedPackages.Contains(packageName, StringComparer.OrdinalIgnoreCase))
+        {
+            _adbError = "The selected package is no longer in the verified installed-package list. Refresh the library.";
+            RuntimeStatusText.Text = "Package not verified";
             return;
+        }
 
         var adbPath = _discoveryResult?.AdbPath;
         if (string.IsNullOrWhiteSpace(adbPath) || string.IsNullOrWhiteSpace(_connectedDeviceSerial))
@@ -578,13 +651,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private void LaunchFeatured_Click(object sender, RoutedEventArgs e)
+    private async void LaunchFeatured_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(
-            "Minecraft has not yet been matched to a verified package in this BlueStacks instance. Connect ADB, open Library, and launch a verified package from there.",
-            "Minecraft package matching pending",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        if (sender is Button { Tag: string packageName })
+            await LaunchPackageAsync(packageName);
+        else
+            RuntimeStatusText.Text = "Minecraft is not installed in this BlueStacks instance.";
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -616,5 +688,10 @@ public partial class MainWindow : Window
         }
     }
 
-    private sealed record AppEntry(string Name, string Category, string Description, bool IsVerified = false);
+    private sealed record AppEntry(
+        string Name,
+        string Category,
+        string Description,
+        bool IsVerified = false,
+        string? PackageName = null);
 }
