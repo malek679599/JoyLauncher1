@@ -46,6 +46,8 @@ A later timeout-cleanup and documentation commit has its own CI run. Do not trea
 | Failure | Package cannot be launched | Clear command error; no false success |
 | Navigation | Select each sidebar destination | Correct view and active navigation state are displayed |
 | Navigation | Press Escape from a secondary view | Returns to Home |
+| Navigation | Press Alt+1 through Alt+7 | Switches to Home, Library, Games, Entertainment, Search, Store, and Settings respectively |
+| Display | Press F11 | Toggles borderless fullscreen; Escape exits fullscreen after returning to Home |
 | Display | Resize and fullscreen | Layout remains usable and readable |
 | Performance | Idle on Home | No unnecessary busy loop or repeated process spawning |
 
