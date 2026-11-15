@@ -1387,10 +1387,10 @@ public partial class MainWindow : Window
         {
             var isSelected = string.Equals(button.Tag as string, tab, StringComparison.Ordinal);
             button.Background = isSelected
-                ? new SolidColorBrush(Color.FromRgb(36, 75, 67))
+                ? new SolidColorBrush(Color.FromRgb(25, 52, 95))
                 : Brushes.Transparent;
             button.Foreground = isSelected
-                ? new SolidColorBrush(Color.FromRgb(217, 247, 234))
+                ? new SolidColorBrush(Color.FromRgb(217, 231, 255))
                 : new SolidColorBrush(Color.FromRgb(170, 181, 192));
         }
 
