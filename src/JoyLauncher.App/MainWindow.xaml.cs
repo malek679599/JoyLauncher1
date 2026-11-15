@@ -15,6 +15,8 @@ namespace JoyLauncher.App;
 
 public partial class MainWindow : Window
 {
+    private const string MinecraftPackageName = "com.mojang.minecraftpe";
+
     private static readonly string CrashLogWriterDirectory = System.IO.Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "JoyLauncher",
@@ -596,6 +598,29 @@ public partial class MainWindow : Window
                     ? "Only packages with a normal launcher activity appear as app cards."
                     : _launchabilityDetectionError ?? "Android launcher-activity discovery is unavailable. Installed packages are shown as a fallback."));
 
+        if (_connectedDeviceSerial is not null &&
+            _installedPackages.Contains(MinecraftPackageName, StringComparer.OrdinalIgnoreCase))
+        {
+            root.Children.Add(CreateInfoCard(
+                "Minecraft crash diagnostics",
+                "MANUAL · LOCAL ONLY",
+                "Reads the latest 700 Android logcat lines only when requested, filters crash blocks to Minecraft, and copies the summary to the clipboard. JoyLauncher does not clear, save, or upload Android logs."));
+
+            var copyMinecraftCrash = new Button
+            {
+                Content = "Copy recent Minecraft crash summary",
+                Width = 280,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 4, 0, 18),
+                Padding = new Thickness(14, 10, 14, 10),
+                Background = (Brush)FindResource("AccentSoftBrush"),
+                Foreground = (Brush)FindResource("PrimaryTextBrush"),
+                ToolTip = "Read a bounded recent logcat window and copy only crash entries that match com.mojang.minecraftpe"
+            };
+            copyMinecraftCrash.Click += CopyMinecraftCrashSummary_Click;
+            root.Children.Add(copyMinecraftCrash);
+        }
+
         var embeddingToggle = new CheckBox
         {
             Content = "Automatically embed BlueStacks inside JoyLauncher (experimental)",
@@ -661,6 +686,52 @@ public partial class MainWindow : Window
             _gamepadService.StatusText + Environment.NewLine +
             "D-pad / left stick: move · A: select · B: back · Start: fullscreen."));
         return root;
+    }
+
+    private async void CopyMinecraftCrashSummary_Click(object sender, RoutedEventArgs e)
+    {
+        var adbPath = _discoveryResult?.AdbPath;
+        var serial = _connectedDeviceSerial;
+        if (string.IsNullOrWhiteSpace(adbPath) || string.IsNullOrWhiteSpace(serial))
+        {
+            RuntimeStatusText.Text = "Connect BlueStacks ADB before collecting Android crash details";
+            return;
+        }
+
+        if (!_installedPackages.Contains(MinecraftPackageName, StringComparer.OrdinalIgnoreCase))
+        {
+            RuntimeStatusText.Text = "Minecraft is not installed in the connected BlueStacks instance";
+            return;
+        }
+
+        RuntimeStatusText.Text = "Reading recent Minecraft crash entries…";
+        var result = await _adbClient.GetRecentCrashSummaryAsync(
+            adbPath,
+            serial,
+            MinecraftPackageName);
+
+        if (!result.Success)
+        {
+            _adbError = result.Error ?? "Android crash summary collection failed.";
+            RuntimeStatusText.Text = "Android crash capture failed";
+            return;
+        }
+
+        try
+        {
+            Clipboard.SetText(result.Summary);
+            RuntimeStatusText.Text = result.CrashFound
+                ? "Minecraft crash summary copied"
+                : "No recent Minecraft crash found · status summary copied";
+        }
+        catch (Exception exception) when (
+            exception is System.Runtime.InteropServices.ExternalException or
+            System.InvalidOperationException or
+            System.Threading.ThreadStateException)
+        {
+            _adbError = $"Clipboard copy failed: {exception.Message}";
+            RuntimeStatusText.Text = "Could not copy Android crash summary";
+        }
     }
 
     private void CopyDiagnostics_Click(object sender, RoutedEventArgs e)

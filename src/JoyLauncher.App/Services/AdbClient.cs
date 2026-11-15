@@ -145,6 +145,39 @@ public sealed class AdbClient
             cancellationToken);
     }
 
+    public async Task<AdbCrashSummaryResult> GetRecentCrashSummaryAsync(
+        string adbExecutable,
+        string deviceSerial,
+        string packageName,
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(adbExecutable))
+            return AdbCrashSummaryResult.Failed("The discovered ADB executable no longer exists.");
+
+        if (string.IsNullOrWhiteSpace(deviceSerial))
+            return AdbCrashSummaryResult.Failed("No verified ADB device is selected.");
+
+        if (!IsValidPackageName(packageName))
+            return AdbCrashSummaryResult.Failed("The selected package name is not valid.");
+
+        // This runs only after an explicit user action. It reads a bounded recent window,
+        // never clears logcat, and returns only crash blocks matching the selected package.
+        var logcat = await RunAsync(
+            adbExecutable,
+            ["-s", deviceSerial, "logcat", "-d", "-v", "threadtime", "-t", "700"],
+            TimeSpan.FromSeconds(15),
+            cancellationToken);
+
+        if (logcat.TimedOut)
+            return AdbCrashSummaryResult.Failed("Android logcat did not return within 15 seconds.");
+
+        if (logcat.ExitCode != 0)
+            return AdbCrashSummaryResult.Failed(FormatError("Could not read Android crash logs.", logcat));
+
+        var summary = AndroidCrashLogParser.Extract(logcat.StandardOutput, packageName);
+        return AdbCrashSummaryResult.Succeeded(summary.Text, summary.CrashFound);
+    }
+
     private static IReadOnlyList<string> ParseLauncherPackageNames(
         string output,
         ISet<string> installedPackages)
@@ -308,6 +341,19 @@ public sealed record AdbCommandResult(
 
     public static AdbCommandResult Timeout() =>
         new(-1, string.Empty, "Command timed out.", true, null);
+}
+
+public sealed record AdbCrashSummaryResult(
+    bool Success,
+    string Summary,
+    bool CrashFound,
+    string? Error)
+{
+    public static AdbCrashSummaryResult Succeeded(string summary, bool crashFound) =>
+        new(true, summary, crashFound, null);
+
+    public static AdbCrashSummaryResult Failed(string error) =>
+        new(false, string.Empty, false, error);
 }
 
 public sealed record AdbScanResult(
