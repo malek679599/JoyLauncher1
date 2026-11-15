@@ -26,7 +26,7 @@ public sealed class XInputGamepadService : IDisposable
     private const uint Left = 0x0004;
     private const uint Right = 0x0008;
     private const uint Back = 0x0020;
-    private const uint Start = 0x0010;
+    private const uint StartButton = 0x0010;
     private const uint Accept = 0x1000;
     private const uint Cancel = 0x2000;
     private const uint StickUp = 1u << 16;
@@ -119,7 +119,7 @@ public sealed class XInputGamepadService : IDisposable
             if ((newlyPressed & (Right | StickRight)) != 0) ButtonPressed?.Invoke(GamepadNavigationButton.Right);
             if ((newlyPressed & Accept) != 0) ButtonPressed?.Invoke(GamepadNavigationButton.Accept);
             if ((newlyPressed & (Back | Cancel)) != 0) ButtonPressed?.Invoke(GamepadNavigationButton.Back);
-            if ((newlyPressed & Start) != 0) ButtonPressed?.Invoke(GamepadNavigationButton.Start);
+            if ((newlyPressed & StartButton) != 0) ButtonPressed?.Invoke(GamepadNavigationButton.Start);
         }
         catch (Exception exception) when (
             exception is DllNotFoundException or
