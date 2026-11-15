@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly AdbClient _adbClient = new();
     private readonly WebsiteLogoService _websiteLogoService = new();
     private readonly LocalPreferencesStore _preferencesStore = new();
+    private readonly XInputGamepadService _gamepadService = new();
     private LocalPreferences _preferences;
     private BlueStacksDiscoveryResult? _discoveryResult;
     private IReadOnlyList<string> _installedPackages = Array.Empty<string>();
@@ -69,11 +70,15 @@ public partial class MainWindow : Window
         Activated += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
         RuntimeStatusText.Text = "Waiting for detection";
         UpdateHomeAppTiles();
+        _gamepadService.ButtonPressed += Gamepad_ButtonPressed;
+        _gamepadService.ConnectionChanged += Gamepad_ConnectionChanged;
+        _gamepadService.Start();
     }
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         BlueStacksWindowHost.Detach();
+        _gamepadService.Dispose();
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -522,6 +527,12 @@ public partial class MainWindow : Window
             "Library preferences",
             "SAVED LOCALLY",
             $"{_preferences.FavoritePackages.Count} favorites · {_preferences.PinnedPackages.Count} pinned · {_preferences.RecentPackages.Count} recent apps. Stored in your Windows user profile."));
+
+        root.Children.Add(CreateInfoCard(
+            "Controller navigation",
+            _gamepadService.IsConnected ? "XINPUT CONTROLLER CONNECTED" : "WAITING FOR CONTROLLER",
+            _gamepadService.StatusText + Environment.NewLine +
+            "D-pad / left stick: move · A: select · B: back · Start: fullscreen."));
         return root;
     }
 
@@ -1044,6 +1055,154 @@ public partial class MainWindow : Window
             RuntimeStatusText.Text = "Minecraft is not installed in this BlueStacks instance.";
     }
 
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (PlayPage.Visibility == Visibility.Visible ||
+            FindVisualAncestor<TextBox>(Keyboard.FocusedElement as DependencyObject) is not null)
+            return;
+
+        var direction = e.Key switch
+        {
+            Key.Up => FocusDirection.Up,
+            Key.Down => FocusDirection.Down,
+            Key.Left => FocusDirection.Left,
+            Key.Right => FocusDirection.Right,
+            _ => (FocusDirection?)null
+        };
+
+        if (direction is not null && MoveKeyboardFocus(direction.Value))
+            e.Handled = true;
+    }
+
+    private bool MoveKeyboardFocus(FocusDirection direction)
+    {
+        if (PlayPage.Visibility == Visibility.Visible ||
+            FindVisualAncestor<TextBox>(Keyboard.FocusedElement as DependencyObject) is not null)
+            return false;
+
+        var candidates = FindVisualChildren<Button>(this)
+            .Where(button => button.IsVisible && button.IsEnabled && button.Focusable)
+            .Distinct()
+            .ToArray();
+
+        if (candidates.Length == 0)
+            return false;
+
+        var current = FindVisualAncestor<Button>(Keyboard.FocusedElement as DependencyObject);
+        if (current is null || !candidates.Contains(current))
+        {
+            var first = candidates[0];
+            first.BringIntoView();
+            return first.Focus();
+        }
+
+        Rect currentBounds;
+        try
+        {
+            currentBounds = current.TransformToAncestor(this)
+                .TransformBounds(new Rect(new Point(0, 0), current.RenderSize));
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+
+        var originX = currentBounds.Left + currentBounds.Width / 2;
+        var originY = currentBounds.Top + currentBounds.Height / 2;
+
+        var next = candidates
+            .Where(candidate => candidate != current)
+            .Select(candidate =>
+            {
+                try
+                {
+                    var bounds = candidate.TransformToAncestor(this)
+                        .TransformBounds(new Rect(new Point(0, 0), candidate.RenderSize));
+                    var dx = bounds.Left + bounds.Width / 2 - originX;
+                    var dy = bounds.Top + bounds.Height / 2 - originY;
+                    var primary = direction switch
+                    {
+                        FocusDirection.Left => -dx,
+                        FocusDirection.Right => dx,
+                        FocusDirection.Up => -dy,
+                        FocusDirection.Down => dy,
+                        _ => -1
+                    };
+                    var cross = direction is FocusDirection.Left or FocusDirection.Right
+                        ? Math.Abs(dy)
+                        : Math.Abs(dx);
+                    return (Candidate: candidate, Score: primary > 1 ? primary + cross * 1.65 : double.PositiveInfinity);
+                }
+                catch (InvalidOperationException)
+                {
+                    return (Candidate: candidate, Score: double.PositiveInfinity);
+                }
+            })
+            .Where(item => double.IsFinite(item.Score))
+            .OrderBy(item => item.Score)
+            .FirstOrDefault();
+
+        if (next.Candidate is null || double.IsInfinity(next.Score))
+            return false;
+
+        next.Candidate.BringIntoView();
+        return next.Candidate.Focus();
+    }
+
+    private void Gamepad_ButtonPressed(GamepadNavigationButton button)
+    {
+        if (PlayPage.Visibility == Visibility.Visible)
+            return;
+
+        switch (button)
+        {
+            case GamepadNavigationButton.Up:
+                MoveKeyboardFocus(FocusDirection.Up);
+                break;
+            case GamepadNavigationButton.Down:
+                MoveKeyboardFocus(FocusDirection.Down);
+                break;
+            case GamepadNavigationButton.Left:
+                MoveKeyboardFocus(FocusDirection.Left);
+                break;
+            case GamepadNavigationButton.Right:
+                MoveKeyboardFocus(FocusDirection.Right);
+                break;
+            case GamepadNavigationButton.Accept:
+                if (FindVisualAncestor<Button>(Keyboard.FocusedElement as DependencyObject) is { IsEnabled: true } focusedButton)
+                    focusedButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                break;
+            case GamepadNavigationButton.Back:
+                if (DynamicPageContent.Visibility == Visibility.Visible)
+                    Navigation_Click(new Button { Tag = "Home" }, new RoutedEventArgs());
+                break;
+            case GamepadNavigationButton.Start:
+                ToggleFullscreen();
+                break;
+        }
+    }
+
+    private void Gamepad_ConnectionChanged(bool connected, string status)
+    {
+        if (PageTitle.Text == "Settings" &&
+            DynamicPageContent.Visibility == Visibility.Visible &&
+            PlayPage.Visibility != Visibility.Visible)
+            DynamicPageContent.Content = BuildSettingsPage();
+    }
+
+    private static T? FindVisualAncestor<T>(DependencyObject? element) where T : DependencyObject
+    {
+        while (element is not null)
+        {
+            if (element is T match)
+                return match;
+
+            element = VisualTreeHelper.GetParent(element);
+        }
+
+        return null;
+    }
+
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape && PlayPage.Visibility == Visibility.Visible)
@@ -1126,6 +1285,14 @@ public partial class MainWindow : Window
             foreach (var descendant in FindVisualChildren<T>(child))
                 yield return descendant;
         }
+    }
+
+    private enum FocusDirection
+    {
+        Up,
+        Down,
+        Left,
+        Right
     }
 
     private sealed record AppEntry(

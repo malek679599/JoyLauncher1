@@ -10,7 +10,8 @@ A Windows desktop launcher for BlueStacks 5, inspired by the clarity and control
 - Support apps such as YouTube, YouTube Kids, Minecraft, and other apps installed in BlueStacks.
 - Provide Home, Library, Games, Entertainment, Search, Store discovery, and Settings areas.
 - Use a dark navy visual system, restrained blue accents, readable typography, and purposeful motion.
-- Keyboard navigation comes first; gamepad navigation is planned.
+- Arrow keys move focus between visible launcher controls; text-field editing and Play-area input are left alone.
+- XInput-compatible controllers support D-pad / left-stick navigation, A to select, B to return, and Start to toggle fullscreen while browsing the launcher.
 - F11 toggles fullscreen; Alt+1 through Alt+7 switch the main sections; Escape returns to Home and then exits fullscreen.
 - Keep preferences local and diagnostics clear.
 - Avoid paid APIs, subscriptions, proprietary paid assets, and unnecessary background services.
@@ -37,6 +38,7 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 - Home page with a featured Minecraft panel and clearly marked sample app tiles.
 - Library category filters, sample app cards, and a live package-list view after ADB connection.
 - Persistent favorites, pinned apps, and recently launched app ordering stored in the current Windows user's local app-data folder.
+- Directional keyboard focus navigation and optional XInput controller navigation for console-style browsing.
 - Games and Entertainment category views.
 - Search across sample entries or verified package identifiers.
 - Settings view for local discovery, ADB endpoints, connection state, and diagnostics.
@@ -62,12 +64,13 @@ BlueStacks remains responsible for Android compatibility. JoyLauncher discovers 
 
 **Still incomplete**
 
-- The user confirmed that the Windows prototype opens, ADB connects, and an app launch is accepted on their local BlueStacks installation. The user confirmed ADB and app launch to the standalone BlueStacks player. The current child-window hosting attempt and launcher-activity filter still need local validation.
+- The user confirmed that the Windows prototype opens, ADB connects, and an app launch is accepted on their local BlueStacks installation. The user confirmed ADB and app launch to the standalone BlueStacks player. The current child-window hosting attempt and launcher-activity filter still need local validation. Keyboard and XInput navigation also require local verification.
 - Cross-process window hosting is experimental and is not a BlueStacks-provided embedding API. JoyLauncher refuses the SetParent call when the host and player DPI-awareness contexts differ, because Windows documents that this can forcibly reset the child process DPI mode. Even with matching contexts, BlueStacks updates, multiple instances, graphics/window-manager behavior, or privilege boundaries can still prevent hosting. The standalone BlueStacks window remains the fallback.
 - Broader app-name and icon metadata, richer recent-activity history, and category/sort controls.
 - Website favicons may be absent, generic, or low resolution. JoyLauncher uses initials when a usable icon cannot be loaded.
 - Full Minecraft package/activity verification and end-to-end embedded-play testing.
-- Full keyboard/gamepad navigation, fullscreen kiosk behavior, local JSON preferences, and a packaged installer.
+- Target-machine verification of keyboard and XInput navigation, fullscreen behavior, and controller pass-through to BlueStacks while Play is active.
+- A packaged installer.
 
 Sample app cards are demonstration data. They are not evidence that those apps are installed. Live package identifiers are shown as verified only after a successful ADB package query.
 

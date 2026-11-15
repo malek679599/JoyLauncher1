@@ -63,15 +63,16 @@ Exit criteria:
 
 ## Phase 5 — Interface polish and controls
 
-**State: partially implemented.**
+**State: keyboard and XInput navigation implemented; target-machine verification remains open.**
 
-Scope: final Home and Library composition, original JoyLauncher artwork, responsive layout, full keyboard focus navigation, and controller support.
+Scope: final Home and Library composition, original JoyLauncher artwork, responsive layout, spatial keyboard focus navigation, and Xbox-compatible controller support.
 
 Exit criteria:
 - [x] Initial dark navy/blue design system and vector hero artwork.
 - [ ] Complete Home and Library compositions.
-- [ ] Finish keyboard focus navigation.
-- [ ] Add gamepad/controller navigation.
+- [x] Add directional keyboard focus navigation while preserving text-field and Play-area input.
+- [x] Add XInput D-pad/left-stick navigation, A/select, B/back, and Start/fullscreen handling.
+- [ ] Verify keyboard and controller behavior on the target laptop; test that gamepad input passes through to BlueStacks while Play is active.
 - [ ] Verify readability at common desktop resolutions.
 
 ## Phase 6 — Release readiness

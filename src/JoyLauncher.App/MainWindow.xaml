@@ -11,7 +11,8 @@
         Background="{StaticResource BackgroundBrush}"
         Foreground="{StaticResource PrimaryTextBrush}"
         FontFamily="Segoe UI"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown"
+        PreviewKeyDown="Window_PreviewKeyDown">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="232"/>
@@ -55,6 +56,7 @@
                     <Button Content="▻   Entertainment" Tag="Entertainment" Click="Navigation_Click" Margin="0,0,0,5"/>
                     <Button Content="⌕   Search" Tag="Search" Click="Navigation_Click" Margin="0,0,0,5"/>
                     <Button Content="＋   Store" Tag="Store" Click="Navigation_Click" Margin="0,0,0,5"/>
+                    <TextBlock Text="ARROWS / D-PAD  ·  ENTER / A  ·  ESC / B" TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" FontSize="9" Margin="8,14,6,0"/>
                 </StackPanel>
             </DockPanel>
         </Border>

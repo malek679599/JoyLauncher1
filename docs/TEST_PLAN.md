@@ -24,7 +24,8 @@
 | Known publisher website favicons | Implemented; visual/network test pending | `WebsiteLogoService.cs` |
 | Android launcher-activity discovery | Implemented using `cmd package query-activities --components`; local BlueStacks behavior pending | `AdbClient.cs` |
 | Unsupported package-manager fallback | Implemented; displays all installed packages with an unverified status | `AdbClient.cs`, Settings page |
-| Gamepad navigation | Not implemented | Planned |
+| Keyboard directional navigation | Implemented in the WPF shell; target-machine behavior pending | `Window_PreviewKeyDown` and spatial focus navigation |
+| XInput controller navigation | Implemented for D-pad/left stick, A, B/Back, and Start; target-machine behavior pending | `XInputGamepadService.cs` |
 
 Run #54 passed the Windows Release build and self-contained publish for the embedded-play and favicon code. The current head adds only a diagnostics-report field; its run #59 is queued. Artifact `JoyLauncher-Windows-x64` from run #54 expires 28 November 2026.
 
@@ -62,6 +63,10 @@ Run #54 passed the Windows Release build and self-contained publish for the embe
 | Navigation | Press Alt+1 through Alt+7 | Switches to Home, Library, Games, Entertainment, Search, Store, and Settings respectively |
 | Display | Press F11 | Toggles borderless fullscreen; Escape exits fullscreen after returning to Home |
 | Display | Resize and fullscreen | Layout remains usable and readable |
+| Keyboard navigation | Use arrow keys while a button is focused | Focus moves to the nearest visible control in that direction; search text editing keeps its arrow-key behavior |
+| Controller | Connect an XInput-compatible controller and use D-pad / left stick | Focus moves through visible launcher controls |
+| Controller | Press A, B, and Start | A activates the focused button, B returns from a secondary page, and Start toggles fullscreen |
+| Controller / Play | Launch an app and use the controller in the Play area | JoyLauncher does not issue launcher navigation actions while the Play page is active; confirm BlueStacks still receives controller input |
 | Performance | Idle on Home | No unnecessary busy loop or repeated process spawning |
 
 ## Manual local validation sequence
