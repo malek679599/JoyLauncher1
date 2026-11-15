@@ -123,7 +123,7 @@ public static class BlueStacksWindowLocator
             if (!IsWindowVisible(window))
                 return true;
 
-            _ = GetWindowThreadProcessId(window, out var processId);
+            GetWindowThreadProcessId(window, out var processId);
             if (!candidateProcessIds.Contains(processId) ||
                 !GetWindowRect(window, out var bounds))
                 return true;
