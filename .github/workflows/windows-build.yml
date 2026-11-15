@@ -30,6 +30,33 @@ jobs:
       - name: Publish self-contained Windows x64 app
         run: dotnet publish src/JoyLauncher.App/JoyLauncher.App.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/JoyLauncher
 
+      - name: Smoke-test Windows app startup
+        shell: pwsh
+        run: |
+          $executable = Join-Path (Resolve-Path "artifacts/JoyLauncher").Path "JoyLauncher.exe"
+          if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
+            throw "Published JoyLauncher.exe was not found."
+          }
+
+          $app = Start-Process -FilePath $executable -PassThru
+          try {
+            Start-Sleep -Seconds 8
+            $app.Refresh()
+            if ($app.HasExited) {
+              throw "JoyLauncher exited during the startup smoke test. Exit code: $($app.ExitCode)"
+            }
+            Write-Host "JoyLauncher remained running for 8 seconds without BlueStacks installed."
+          }
+          finally {
+            $app.Refresh()
+            if (-not $app.HasExited) {
+              $null = $app.CloseMainWindow()
+              if (-not $app.WaitForExit(5000)) {
+                Stop-Process -Id $app.Id -Force
+              }
+            }
+          }
+
       - name: Write build provenance and SHA-256 manifest
         shell: pwsh
         run: |
