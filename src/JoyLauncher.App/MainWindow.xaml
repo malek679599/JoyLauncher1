@@ -181,7 +181,7 @@
 
       </Grid>
       <Grid x:Name="BigPictureOverlay" Visibility="Collapsed" Panel.ZIndex="100"
-            Background="#161920" Focusable="False">
+            Background="#080D18" Focusable="False">
         <Grid.RowDefinitions>
           <RowDefinition Height="60"/>
           <RowDefinition Height="*"/>
@@ -190,11 +190,11 @@
         </Grid.RowDefinitions>
 
         <!-- Console utility bar -->
-        <Border Grid.Row="0" Background="#111720" BorderBrush="#26313B" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="#0D1626" BorderBrush="#26364E" BorderThickness="0,0,0,1">
           <DockPanel Margin="34,0,34,0" LastChildFill="False">
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Width="34" Height="34" CornerRadius="9" Background="#244E49">
-                <TextBlock Text="J" FontSize="21" FontWeight="ExtraBold" Foreground="#B8F4DA"
+              <Border Width="34" Height="34" CornerRadius="9" Background="#19345F">
+                <TextBlock Text="J" FontSize="21" FontWeight="ExtraBold" Foreground="#C9DCFF"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Border>
               <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
@@ -234,16 +234,31 @@
 
           <Border Grid.Row="0" CornerRadius="18" ClipToBounds="True"
                   Background="#173B3A" Margin="0,0,0,4">
-            <Grid x:Name="BigPictureHeroBackdrop" Background="#173B3A">
-              <Border Background="{StaticResource BackgroundBrush}" Opacity="0.08"/>
-              <Ellipse Width="520" Height="520" Fill="#63D4AE" Opacity="0.12"
-                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,110,0"/>
-              <Ellipse Width="380" Height="380" Stroke="#9AE9D0" StrokeThickness="1"
-                       Opacity="0.22" HorizontalAlignment="Right" VerticalAlignment="Center"
-                       Margin="0,0,180,0"/>
-              <Ellipse Width="250" Height="250" Stroke="#9AE9D0" StrokeThickness="1"
-                       Opacity="0.17" HorizontalAlignment="Right" VerticalAlignment="Center"
-                       Margin="0,0,245,0"/>
+            <Grid x:Name="BigPictureHeroBackdrop" Background="#10213B">
+              <Image x:Name="BigPictureHeroBackgroundImage"
+                     Stretch="UniformToFill"
+                     Opacity="0.62"
+                     Visibility="Collapsed"
+                     IsHitTestVisible="False"
+                     ImageFailed="BigPictureHeroBackgroundImage_ImageFailed"/>
+              <Border x:Name="BigPictureHeroTint" IsHitTestVisible="False">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#E6080D18" Offset="0"/>
+                    <GradientStop Color="#B8080D18" Offset="0.48"/>
+                    <GradientStop Color="#55080D18" Offset="1"/>
+                  </LinearGradientBrush>
+                </Border.Background>
+              </Border>
+              <Ellipse Width="520" Height="520" Fill="#4D8DFF" Opacity="0.13"
+                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,110,0"
+                       IsHitTestVisible="False"/>
+              <Ellipse Width="380" Height="380" Stroke="#9CCBFF" StrokeThickness="1"
+                       Opacity="0.23" HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Margin="0,0,180,0" IsHitTestVisible="False"/>
+              <Ellipse Width="250" Height="250" Stroke="#9CCBFF" StrokeThickness="1"
+                       Opacity="0.18" HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Margin="0,0,245,0" IsHitTestVisible="False"/>
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="1.15*"/>
@@ -326,7 +341,7 @@
         <Grid Grid.Row="2">
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Button Content="WHAT'S NEW" Tag="WHAT'S NEW" Click="BigPictureTab_Click"
-                    Padding="18,8" Margin="5,0" Background="#244B43" Foreground="#D9F7EA"
+                    Padding="18,8" Margin="5,0" Background="#19345F" Foreground="#D9E7FF"
                     FontSize="10" FontWeight="Bold"/>
             <Button Content="FRIENDS" Tag="FRIENDS" Click="BigPictureTab_Click"
                     Padding="18,8" Margin="5,0" Background="Transparent"
@@ -342,7 +357,7 @@
         </Grid>
 
         <!-- Controller legend -->
-        <Border Grid.Row="3" Background="#111720" BorderBrush="#26313B" BorderThickness="0,1,0,0">
+        <Border Grid.Row="3" Background="#0D1626" BorderBrush="#26364E" BorderThickness="0,1,0,0">
           <DockPanel Margin="34,0,34,0" LastChildFill="False">
             <Button x:Name="BigPictureExitButton" DockPanel.Dock="Left" Content="☰   MENU"
                     Click="ExitBigPicture_Click" Padding="12,7" Background="Transparent"

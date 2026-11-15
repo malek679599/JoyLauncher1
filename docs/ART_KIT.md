@@ -10,6 +10,7 @@ JoyLauncher should feel like a modern console interface: confident, calm, futuri
 - `assets/backgrounds/hero/hero-block.svg` — original geometric block hero art.
 - `assets/manifest/ASSET_SOURCES.md` — provenance and usage rules.
 - WPF Home hero — editable geometric vector shapes.
+- Big Picture hero — optional on-demand Unsplash abstract background, dynamically tinted by the selected app; original WPF geometry remains as the offline fallback.
 - Figma Home screen — editable hero block illustration, not a flattened screenshot.
 
 ## Remaining brand assets
@@ -69,8 +70,8 @@ assets/
 ## Quality checklist
 
 - [x] Original JoyLauncher identity; no Steam logo or copied wordmark.
-- [ ] Readable over both dark and bright portions of artwork.
+- [x] Readable over both dark and bright portions of artwork through a dark left-to-right tint.
 - [ ] Works in monochrome and at small sizes.
-- [x] No unlicensed third-party art bundled in the current asset set.
+- [x] No unlicensed third-party art bundled in the current asset set; the optional remote Unsplash image is not bundled.
 - [x] Source files and asset provenance retained.
 - [ ] Image sizes optimized to avoid excessive memory/disk usage.

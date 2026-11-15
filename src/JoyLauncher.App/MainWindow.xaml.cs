@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -40,6 +41,7 @@ public partial class MainWindow : Window
     private bool _isBigPictureMode;
     private bool _wasBigPictureBeforePlay;
     private bool _bigPictureOwnedFullscreen;
+    private bool _bigPictureHeroArtworkRequested;
     private DispatcherTimer? _clockTimer;
     private string _bigPictureActiveTab = "WHAT'S NEW";
     private WindowStyle _previousWindowStyle;
@@ -1010,7 +1012,13 @@ public partial class MainWindow : Window
         var palette = GetBigPicturePalette(app);
 
         BigPictureHeroBackdrop.Background = new LinearGradientBrush(palette.Start, palette.End, 0);
+        BigPictureHeroTint.Background = new LinearGradientBrush(
+            Color.FromArgb(218, palette.Start.R, palette.Start.G, palette.Start.B),
+            Color.FromArgb(118, palette.End.R, palette.End.G, palette.End.B),
+            0);
         BigPictureHeroArtworkSurface.Background = new LinearGradientBrush(palette.End, palette.Accent, 35);
+        BigPictureHeroEyebrow.Foreground = new SolidColorBrush(Color.FromArgb(
+            238, palette.Accent.R, palette.Accent.G, palette.Accent.B));
         BigPictureHeroEyebrow.Text = $"{app.Category.ToUpperInvariant()}  ·  {(app.IsVerified ? "INSTALLED" : "PREVIEW")}";
         BigPictureHeroTitle.Text = app.Name.ToUpperInvariant();
         BigPictureHeroDescription.Text = app.IsVerified
@@ -1051,8 +1059,55 @@ public partial class MainWindow : Window
             ? "No launchable apps were returned by Android."
             : "Connect BlueStacks ADB to load your installed apps.";
         BigPictureHeroBackdrop.Background = new LinearGradientBrush(
-            Color.FromRgb(25, 52, 60), Color.FromRgb(22, 25, 32), 0);
-        BigPictureHeroArtworkSurface.Background = new SolidColorBrush(Color.FromRgb(34, 67, 68));
+            Color.FromRgb(16, 33, 59), Color.FromRgb(7, 13, 24), 0);
+        BigPictureHeroTint.Background = new LinearGradientBrush(
+            Color.FromArgb(224, 16, 33, 59),
+            Color.FromArgb(140, 7, 13, 24),
+            0);
+        BigPictureHeroEyebrow.Foreground = new SolidColorBrush(Color.FromRgb(156, 203, 255));
+        BigPictureHeroArtworkSurface.Background = new SolidColorBrush(Color.FromRgb(25, 52, 95));
+    }
+
+    private void EnsureBigPictureHeroArtwork()
+    {
+        if (_bigPictureHeroArtworkRequested)
+            return;
+
+        _bigPictureHeroArtworkRequested = true;
+        try
+        {
+            // Load only after the user opens Big Picture Mode. The local gradients and shapes remain
+            // visible if the network is unavailable or the remote image cannot be decoded.
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.UriSource = new Uri(
+                "https://images.unsplash.com/photo-1776875097847-49bd9bcf1eca?auto=format&fit=crop&fm=jpg&q=82&w=1920&h=1080",
+                UriKind.Absolute);
+            image.CacheOption = BitmapCacheOption.OnDemand;
+            image.CreateOptions = BitmapCreateOptions.DelayCreation;
+            image.DecodePixelWidth = 1920;
+            image.EndInit();
+
+            BigPictureHeroBackgroundImage.Source = image;
+            BigPictureHeroBackgroundImage.Visibility = Visibility.Visible;
+        }
+        catch (Exception exception) when (
+            exception is UriFormatException or
+            InvalidOperationException or
+            System.IO.IOException or
+            NotSupportedException)
+        {
+            BigPictureHeroBackgroundImage.Source = null;
+            BigPictureHeroBackgroundImage.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void BigPictureHeroBackgroundImage_ImageFailed(
+        object sender,
+        ExceptionRoutedEventArgs e)
+    {
+        BigPictureHeroBackgroundImage.Source = null;
+        BigPictureHeroBackgroundImage.Visibility = Visibility.Collapsed;
     }
 
     private Button CreateBigPictureFeaturedCard(AppEntry app)
@@ -1370,6 +1425,7 @@ public partial class MainWindow : Window
         if (_bigPictureOwnedFullscreen)
             ToggleFullscreen();
 
+        EnsureBigPictureHeroArtwork();
         RefreshBigPictureContent();
         StandardShell.Visibility = Visibility.Collapsed;
         BigPictureOverlay.Visibility = Visibility.Visible;

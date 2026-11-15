@@ -85,3 +85,11 @@ Big Picture Mode is a full-screen Windows WPF shell that launches Android apps t
 ## Responsive behavior
 
 Support 1280×720, 1366×768, 1920×1080, and resizable windowed mode. Content must remain navigable at smaller sizes; rails may scroll horizontally rather than shrinking app tiles beyond readability.
+
+
+## Big Picture hero artwork
+
+- The hero lazily requests the free Unsplash image by Mansy Graphics only after Big Picture Mode is opened.
+- A translucent app-specific gradient tint follows the selected tile's category palette, so hover and keyboard focus continue to change the hero presentation.
+- The image is optional. If the network is unavailable or the image cannot be decoded, the bundled WPF gradients, rings and initials remain as the offline fallback.
+- The launcher does not download third-party game covers or logos. Verified installed-app logos continue to use the existing website favicon service.
