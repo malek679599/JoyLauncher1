@@ -11,26 +11,29 @@
 
 | Check | Result | Evidence |
 |---|---|---|
-| Windows Release CI build, self-contained publish, and artifact upload | Passed | GitHub Actions run #98, commit `0f504aa` |
-| WPF shell, navigation, Library and Search | Compiled in the Windows Release build; interactive navigation still needs target-machine validation | GitHub Actions run #98 |
-| BlueStacks discovery and ADB configuration parsing | Compiled in Windows CI; local behavior unverified | `BlueStacksDiscoveryService.cs` |
+| Windows Release build | Passed; 0 warnings and 0 errors | GitHub Actions run #103, commit `3ae05aa601b4aa91c3ffd0ccc3fc3d392c9027ca` |
+| Automated regression suite | Passed; 17/17 tests | Run #103 |
+| Self-contained Windows x64 publish | Passed | Run #103 |
+| Hosted Windows startup smoke test | Passed; executable remained open for the 8-second check without BlueStacks | Run #103 |
+| Inno Setup compiler integrity | Passed; pinned Inno Setup 7.1.1 installer SHA-256 and Authenticode publisher signature verified | Run #103 |
+| Per-user Windows installer | Passed; installer compiled successfully | Run #103 |
+| Installer lifecycle smoke test | Passed; silent install created the app and uninstaller, then silent uninstall removed the executable | Run #103 |
+| Portable ZIP and release metadata | Passed; versioned ZIP, build info, release notes, and SHA-256 manifest generated | Run #103 |
+| Release package integrity | Passed; every file listed in the release checksum manifest verified | Run #103 |
+| Versioned release artifact | Uploaded as `JoyLauncher-Release-Windows-x64`; artifact ID `14173769008`, expires 15 December 2026 | [Run #103](https://github.com/malek679599/JoyLauncher1/actions/runs/43745381418) |
+| Library sorting | Passed; name, category, recent, favorites-first, pinned-first, and invalid-mode fallback | `AppLibrarySorterTests.cs`, run #103 |
+| App metadata resolution | Passed; known package mapping and unknown-package humanization | `AppMetadataCatalogTests.cs`, run #103 |
+| Sort preference persistence | Passed; roundtrip, old settings without a sort field, and invalid sort normalization | `LocalPreferencesStoreTests.cs`, run #103 |
 | ADB endpoint connection and package enumeration | User-confirmed working locally | User report, 14 Nov 2026 |
 | ADB app launch to separate BlueStacks player | User-confirmed working; not embedded | User report, 14 Nov 2026 |
-| Figma foundations and AppTile component | Created; full Home/Library composition incomplete | JoyLauncher Figma file |
-| Target-laptop Windows build and runtime validation | Not yet confirmed | Hosted CI is not the user's ThinkPad; obtain local crash evidence |
 | Actual BlueStacks connection | User-confirmed working | User report, 14 Nov 2026 |
-| In-launcher BlueStacks child-window hosting | Experimental guarded `SetParent` implementation; not yet locally tested | `ExternalWindowHost.cs` and `BlueStacksWindowLocator.cs` |
-| Website favicon display | Implemented; network result still needs visual verification | `WebsiteLogoService.cs` |
-| Known publisher website favicons | Implemented; visual/network test pending | `WebsiteLogoService.cs` |
-| Android launcher-activity discovery | Implemented using `cmd package query-activities --components`; local BlueStacks behavior pending | `AdbClient.cs` |
-| Unsupported package-manager fallback | Implemented; displays all installed packages with an unverified status | `AdbClient.cs`, Settings page |
-| Keyboard directional navigation | Implemented in the WPF shell; target-machine behavior pending | `Window_PreviewKeyDown` and spatial focus navigation |
-| XInput controller navigation | Implemented for D-pad/left stick, A, B/Back, and Start; target-machine behavior pending | `XInputGamepadService.cs` |
-| Cross-thread BlueStacks focus coordination | Passed in Windows CI (4/4 tests) | `WindowFocusCoordinatorTests.cs`, run #98 suite |
-| Local crash reporting | Added local-only WPF/AppDomain/task exception logging; 2 writer tests passed | `CrashLogWriter.cs`, `App.xaml.cs`, run #98 suite |
+| In-launcher BlueStacks child-window hosting | Experimental guarded `SetParent` implementation; not yet locally tested | `ExternalWindowHost.cs`, `BlueStacksWindowLocator.cs` |
+| Target-laptop startup, navigation, and package installation | Not yet confirmed on the user's ThinkPad | Hosted CI does not replace target-machine validation |
+| Keyboard and XInput controller behavior | Implemented; target-machine verification pending | `Window_PreviewKeyDown`, `XInputGamepadService.cs` |
 
-Run #98 (commit `0f504aa50a1d3a451c1d220280497172ec0c954f`) passed the Windows Release build with 0 compiler warnings and 0 errors, all 6 automated tests, self-contained Windows x64 publish, an 8-second startup smoke test, provenance/checksum generation, and artifact upload. The smoke test verified that the published executable remained running on a hosted Windows runner without BlueStacks installed; it does not prove startup on the target laptop or validate BlueStacks embedding. The `JoyLauncher-Windows-x64` artifact from run #98 expires 29 November 2026. GitHub Actions emitted Node/dependency deprecation notices from its workflow actions; these were non-fatal and are not application compiler warnings.
+Run #103 passed on commit `3ae05aa601b4aa91c3ffd0ccc3fc3d392c9027ca` with 0 compiler warnings, 0 errors, all 17 tests, self-contained Windows x64 publishing, an 8-second startup smoke test, installer compilation, per-user install/uninstall smoke tests, portable package generation, and release checksum verification. The tag-triggered GitHub Release step was skipped because the run was for `main`, not a version tag. The artifact is retained for 30 days and expires 15 December 2026.
 
+Hosted Windows checks do not prove that JoyLauncher works on the user's ThinkPad, that BlueStacks embeds successfully, or that the earlier user-reported crash is resolved. Those remain explicit manual release gates.
 ## Test matrix
 
 | Area | Test | Expected result |
@@ -46,6 +49,11 @@ Run #98 (commit `0f504aa50a1d3a451c1d220280497172ec0c954f`) passed the Windows R
 | Library | Package query returns no entries | Empty live state is shown; sample cards are not presented as installed |
 | Category pages | Games and Entertainment after connection | Pages filter live package data instead of showing sample tiles |
 | Search | Search a verified package identifier or mapped app name | Matching live package entries appear |
+| Library | Search by name, category, or package identifier | The visible package grid updates and shows a no-results state when empty |
+| Library | Change sort mode and restart JoyLauncher | Selected sort mode remains saved locally |
+| Library | Sort by recent/favorite/pinned/category/name | The visible package order follows the selected sort mode |
+| Library | Launch or fail to launch a verified package | The Library reports launch acceptance/failure separately from embedding status |
+| Library | Unknown package identifier | Humanized suffix, Other category, and full package ID are shown |
 | Minecraft | Exact Minecraft package ID has a MAIN/LAUNCHER activity | Featured Minecraft action becomes enabled and targets the discovered package |
 | Minecraft | Activity query unsupported | Featured Minecraft uses compatibility fallback and Settings labels launchability as unverified |
 | Minecraft | Package ID is absent | Featured Minecraft action stays disabled and explains the requirement |
@@ -95,6 +103,9 @@ Crash reports are not uploaded automatically. They include the exception message
 12. Resize JoyLauncher, press F11, and test keyboard/mouse input in the embedded game.
 13. Check that known publisher favicons load while online and initials remain when offline.
 14. Repeat with BlueStacks closed or ADB disabled and verify useful error states.
+15. Change the Library sort order, favorite and pin an app, close/reopen JoyLauncher, and verify all preferences persisted.
+16. Search the Library by friendly name and package ID, then test each sort mode and category filter.
+17. Install the versioned per-user installer, start JoyLauncher, uninstall it, and confirm the app is removed. The hosted CI already smoke-tests install/uninstall; this step confirms the target laptop.
 
 ## Evidence required
 
@@ -117,6 +128,7 @@ A release candidate is not considered validated until it has:
 5. Package enumeration and verified app-launch checks.
 6. Failure-path checks.
 7. A documented list of untested or unsupported behavior.
+8. A completed install/uninstall check of the versioned per-user installer on the target machine.
 
 
 ## Big Picture mode and embedded toolbar validation

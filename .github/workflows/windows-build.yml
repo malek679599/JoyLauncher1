@@ -233,15 +233,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$env:GITHUB_REF_NAME" `
-            "artifacts/Release/JoyLauncher-Setup-$($env:APP_VERSION)-win-x64.exe" `
-            "artifacts/Release/JoyLauncher-Portable-$($env:APP_VERSION)-win-x64.zip" `
-            "artifacts/Release/BUILD-INFO.txt" `
-            "artifacts/Release/RELEASE_NOTES.md" `
-            "artifacts/Release/SHA256SUMS.txt" `
-            --verify-tag `
-            --title "JoyLauncher $($env:APP_VERSION)" `
-            --notes-file "RELEASE_NOTES.md"
+          $releaseArguments = @(
+            "artifacts/Release/JoyLauncher-Setup-$($env:APP_VERSION)-win-x64.exe",
+            "artifacts/Release/JoyLauncher-Portable-$($env:APP_VERSION)-win-x64.zip",
+            "artifacts/Release/BUILD-INFO.txt",
+            "artifacts/Release/RELEASE_NOTES.md",
+            "artifacts/Release/SHA256SUMS.txt",
+            "--verify-tag",
+            "--title",
+            "JoyLauncher $($env:APP_VERSION)",
+            "--notes-file",
+            "RELEASE_NOTES.md"
+          )
+          if ($env:APP_VERSION.Contains("-")) {
+            $releaseArguments += "--prerelease"
+          }
+          gh release create "$env:GITHUB_REF_NAME" @releaseArguments
 
       - name: Upload versioned Windows release packages
         uses: actions/upload-artifact@v6

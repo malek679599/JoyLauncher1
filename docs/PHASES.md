@@ -50,7 +50,7 @@ Exit criteria:
 
 ## Phase 4 — Library and daily-use experience
 
-**State: core discovery and first persistent management features implemented; target-machine verification remains.**
+**State: library features implemented and covered by Windows CI; target-machine verification remains.**
 
 Scope: complete friendly metadata, publisher icons, search, sort, favorites, pinned apps, recents, and reliable launch feedback.
 
@@ -60,8 +60,12 @@ Exit criteria:
 - [x] Load website favicons for the known publisher set.
 - [x] Add persistent favorites and pinned apps.
 - [x] Track and surface recently launched apps.
-- [ ] Add sorting controls, broader metadata, and verify preference persistence on the target machine.
-- [ ] Verify icon loading and launch feedback on the target machine.
+- [x] Add five sorting modes, dynamic category filters, and search by name/category/package ID.
+- [x] Add broader friendly package metadata, humanized fallback names, and retryable publisher-icon failures.
+- [x] Persist the selected sort mode alongside favorites, pins, and recents; legacy preference files keep the default sort mode.
+- [x] Add automated tests for sorting, metadata resolution, and preference persistence.
+- [x] Show launch acceptance/failure in the Library separately from embedding status.
+- [ ] Verify sort preference persistence, publisher icons, and launch feedback on the target machine.
 
 ## Phase 5 — Interface polish and controls
 
@@ -82,13 +86,18 @@ Exit criteria:
 
 ## Phase 6 — Release readiness
 
-**State: open.**
+**State: versioned preview packages built and verified in hosted Windows CI; target-machine acceptance and final release publication remain open.**
 
 Scope: local build, regression tests, clean packaging, release notes, integrity manifest, and explicit known limitations.
 
 Exit criteria:
 - [x] Windows CI build and self-contained artifact.
 - [x] Build provenance and SHA-256 manifest generation.
-- [ ] Complete all local Play tests.
-- [ ] Complete navigation and failure-recovery checks.
-- [ ] Package a versioned release with test evidence and known limitations.
+- [x] Produce a versioned self-contained portable ZIP and per-user Windows installer.
+- [x] Verify the installer performs a silent install and clean uninstall on a hosted Windows runner.
+- [x] Verify release-package SHA-256 hashes and upload the versioned package bundle.
+- [x] Include release notes with requirements, known limitations, and unsigned-binary disclosure.
+- [x] Add tag-triggered GitHub Release publishing for version tags.
+- [ ] Install and launch the preview packages on the target ThinkPad.
+- [ ] Complete all local Play tests, navigation checks, and failure-recovery checks.
+- [ ] Publish a stable versioned release only after the target-machine acceptance gate passes.
