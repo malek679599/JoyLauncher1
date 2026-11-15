@@ -167,6 +167,33 @@ public static class BlueStacksWindowLocator
         return bestWindow;
     }
 
+    public static bool TryBringMainPlayerToFront(string? expectedPlayerPath, out string diagnostic)
+    {
+        var window = FindMainPlayerWindow(expectedPlayerPath, out var discoveryDiagnostic);
+        if (window == IntPtr.Zero)
+        {
+            diagnostic = discoveryDiagnostic;
+            return false;
+        }
+
+        if (IsIconic(window))
+            _ = ShowWindow(window, SwRestore);
+
+        if (!SetForegroundWindow(window))
+        {
+            var error = Marshal.GetLastWin32Error();
+            diagnostic = $"Found the BlueStacks player window, but Windows did not allow it to take foreground. " +
+                         (error == 0 ? discoveryDiagnostic :
+                             $"Win32 error {error}: {new Win32Exception(error).Message}. {discoveryDiagnostic}");
+            return false;
+        }
+
+        diagnostic = $"Brought the standalone BlueStacks player window to the foreground. {discoveryDiagnostic}";
+        return true;
+    }
+
+    private const int SwRestore = 9;
+
     private delegate bool EnumWindowsCallback(IntPtr window, IntPtr parameter);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -208,6 +235,17 @@ public static class BlueStacksWindowLocator
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool IsWindowVisible(IntPtr window);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr window);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ShowWindow(IntPtr window, int command);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetForegroundWindow(IntPtr window);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);

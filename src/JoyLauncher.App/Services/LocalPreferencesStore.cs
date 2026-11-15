@@ -68,6 +68,7 @@ public sealed class LocalPreferences
     public List<string> PinnedPackages { get; set; } = [];
     public List<string> RecentPackages { get; set; } = [];
     public string LibrarySortOrder { get; set; } = AppLibrarySortModes.Name;
+    public bool EnableExperimentalEmbedding { get; set; } = false;
 
     internal void Normalize()
     {

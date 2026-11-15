@@ -594,6 +594,30 @@ public partial class MainWindow : Window
                     ? "Only packages with a normal launcher activity appear as app cards."
                     : _launchabilityDetectionError ?? "Android launcher-activity discovery is unavailable. Installed packages are shown as a fallback."));
 
+        var embeddingToggle = new CheckBox
+        {
+            Content = "Automatically embed BlueStacks inside JoyLauncher (experimental)",
+            IsChecked = _preferences.EnableExperimentalEmbedding,
+            Foreground = (Brush)FindResource("PrimaryTextBrush"),
+            Margin = new Thickness(0, 8, 0, 8),
+            ToolTip = "Off is the safe default. Enabling this automatically attempts cross-process SetParent after every app launch."
+        };
+        embeddingToggle.Checked += (_, _) =>
+        {
+            _preferences.EnableExperimentalEmbedding = true;
+            SavePreferences();
+        };
+        embeddingToggle.Unchecked += (_, _) =>
+        {
+            _preferences.EnableExperimentalEmbedding = false;
+            SavePreferences();
+        };
+        root.Children.Add(embeddingToggle);
+        root.Children.Add(CreateInfoCard(
+            "Embedding safety",
+            _preferences.EnableExperimentalEmbedding ? "EXPERIMENTAL MODE ON" : "SAFE STANDALONE MODE",
+            "BlueStacks window embedding uses an unsupported cross-process Windows SetParent operation. Keep this off if a game crashes, closes, or renders incorrectly after launch. You can test embedding manually from the Play screen."));
+
         root.Children.Add(CreateInfoCard(
             "BlueStacks child-window hosting",
             BlueStacksWindowHost.IsDocked ? "EMBEDDED" : PlayPage.Visibility == Visibility.Visible ? "NOT EMBEDDED" : "NOT ACTIVE",
@@ -661,6 +685,7 @@ public partial class MainWindow : Window
             $"Launchable app count: {_launchablePackages.Count}",
             $"Launchability detection available: {_launchabilityDetectionAvailable}",
             $"Launchability detection detail: {_launchabilityDetectionError ?? "None"}",
+            $"Experimental automatic BlueStacks embedding enabled: {_preferences.EnableExperimentalEmbedding}",
             $"BlueStacks player embedded in Play area: {BlueStacksWindowHost.IsDocked}",
             $"Embedded player window handle: {(BlueStacksWindowHost.DockedWindowHandle == IntPtr.Zero ? "None" : $"0x{BlueStacksWindowHost.DockedWindowHandle.ToInt64():X}")}",
             $"Player-window embedding detail: {_windowEmbeddingDiagnostic ?? "None"}",
@@ -1608,22 +1633,44 @@ public partial class MainWindow : Window
         }
 
         PlayingAppTitle.Text = displayName;
-        PlayingStatusText.Text = "Waiting for the BlueStacks player window…";
         PageTitle.Text = "Now playing";
-        PageSubtitle.Text = $"Attempting to run {displayName} in BlueStacks inside JoyLauncher’s Play area.";
         MainContentScrollViewer.Visibility = Visibility.Collapsed;
         PlayPage.Visibility = Visibility.Visible;
 
+        if (!_preferences.EnableExperimentalEmbedding)
+        {
+            BlueStacksWindowHost.Detach();
+            BlueStacksWindowHost.Visibility = Visibility.Collapsed;
+            StandalonePlayerNotice.Visibility = Visibility.Visible;
+            _windowEmbeddingDiagnostic =
+                "Automatic BlueStacks embedding is disabled. The ADB launch request was accepted; the BlueStacks player was left standalone.";
+            PlayingStatusText.Text = "Launch request accepted · using standalone BlueStacks mode";
+            PageSubtitle.Text = $"Sent {displayName} to BlueStacks. The separate player window is being brought forward.";
+            StandalonePlayerDescription.Text =
+                $"JoyLauncher sent the launch request for {displayName}. The BlueStacks player stays in its own window because experimental window embedding is disabled by default.";
+            await BringBlueStacksPlayerForwardAsync();
+            return;
+        }
+
+        PlayingStatusText.Text = "Waiting for the BlueStacks player window…";
+        PageSubtitle.Text = $"Attempting experimental in-launcher hosting for {displayName}.";
         await Task.Delay(150);
         await TryEmbedRunningPlayerAsync();
     }
 
     private async Task TryEmbedRunningPlayerAsync()
     {
-        PlayingStatusText.Text = "Locating the BlueStacks player window…";
+        PlayingStatusText.Text = "Preparing the experimental embedded player…";
         _windowEmbeddingDiagnostic = null;
         _windowDiscoveryDiagnostic = null;
+        StandalonePlayerNotice.Visibility = Visibility.Collapsed;
+        BlueStacksWindowHost.Visibility = Visibility.Visible;
 
+        // HwndHost creates its native child surface when it becomes visible.
+        await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+        await Task.Delay(100);
+
+        PlayingStatusText.Text = "Locating the BlueStacks player window…";
         string? attachError = null;
         for (var attempt = 0; attempt < 40; attempt++)
         {
@@ -1638,6 +1685,7 @@ public partial class MainWindow : Window
                 if (BlueStacksWindowHost.TryAttach(playerWindow, out attachError))
                 {
                     _windowEmbeddingDiagnostic = BlueStacksWindowHost.LastAttachDiagnostic;
+                    StandalonePlayerNotice.Visibility = Visibility.Collapsed;
                     PlayingStatusText.Text = "BlueStacks is embedded in the Play area. Click the game area to focus controls.";
                     RuntimeStatusText.Text = "Player window embedded in JoyLauncher";
                     _adbError = null;
@@ -1657,10 +1705,41 @@ public partial class MainWindow : Window
             "No embedding attempt was possible because no matching BlueStacks player window was located.";
         _adbError = _windowEmbeddingDiagnostic;
         var detail = attachError ?? _windowDiscoveryDiagnostic ?? "No additional Windows window details are available.";
-        PlayingStatusText.Text = $"Could not embed the BlueStacks player: {detail}";
-        RuntimeStatusText.Text = "Game opened · embedding unavailable";
-        if (DynamicPageContent.Visibility == Visibility.Visible)
-            DynamicPageContent.Content = BuildPage(PageTitle.Text);
+        BlueStacksWindowHost.Detach();
+        BlueStacksWindowHost.Visibility = Visibility.Collapsed;
+        StandalonePlayerNotice.Visibility = Visibility.Visible;
+        StandalonePlayerDescription.Text =
+            $"The experimental embedding attempt failed, so JoyLauncher left BlueStacks in its own window. {detail}";
+        PlayingStatusText.Text = $"Embedding unavailable · standalone fallback active";
+        RuntimeStatusText.Text = "Game launched · standalone fallback";
+        await BringBlueStacksPlayerForwardAsync();
+    }
+
+    private async Task BringBlueStacksPlayerForwardAsync()
+    {
+        var attempt = 0;
+        string detail = "No BlueStacks player window was found yet.";
+        while (attempt < 10)
+        {
+            if (BlueStacksWindowLocator.TryBringMainPlayerToFront(
+                    _discoveryResult?.PlayerPath,
+                    out detail))
+            {
+                RuntimeStatusText.Text = "BlueStacks player brought forward";
+                return;
+            }
+
+            attempt++;
+            await Task.Delay(200);
+        }
+
+        RuntimeStatusText.Text = "BlueStacks player not found";
+        PlayingStatusText.Text = detail;
+    }
+
+    private async void BringBlueStacksForward_Click(object sender, RoutedEventArgs e)
+    {
+        await BringBlueStacksPlayerForwardAsync();
     }
 
     private async void RetryEmbedding_Click(object sender, RoutedEventArgs e)
@@ -1690,6 +1769,8 @@ public partial class MainWindow : Window
     private void ReturnFromPlayView(bool navigateHome)
     {
         BlueStacksWindowHost.Detach();
+        BlueStacksWindowHost.Visibility = Visibility.Collapsed;
+        StandalonePlayerNotice.Visibility = Visibility.Visible;
         PlayPage.Visibility = Visibility.Collapsed;
         MainContentScrollViewer.Visibility = Visibility.Visible;
 
