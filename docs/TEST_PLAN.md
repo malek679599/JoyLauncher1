@@ -11,13 +11,13 @@
 
 | Check | Result | Evidence |
 |---|---|---|
-| Windows Release CI build and self-contained publish | Passed | GitHub Actions run #54, commit `1e6fe5c` |
-| WPF shell, navigation, Library and Search | Compiled in Windows CI | Commit `d4e9aa2` |
+| Windows Release CI build, self-contained publish, and artifact upload | Passed | GitHub Actions run #98, commit `0f504aa` |
+| WPF shell, navigation, Library and Search | Compiled in the Windows Release build; interactive navigation still needs target-machine validation | GitHub Actions run #98 |
 | BlueStacks discovery and ADB configuration parsing | Compiled in Windows CI; local behavior unverified | `BlueStacksDiscoveryService.cs` |
 | ADB endpoint connection and package enumeration | User-confirmed working locally | User report, 14 Nov 2026 |
 | ADB app launch to separate BlueStacks player | User-confirmed working; not embedded | User report, 14 Nov 2026 |
 | Figma foundations and AppTile component | Created; full Home/Library composition incomplete | JoyLauncher Figma file |
-| Local Windows build | Not yet run | Requires target Windows machine |
+| Target-laptop Windows build and runtime validation | Not yet confirmed | Hosted CI is not the user's ThinkPad; obtain local crash evidence |
 | Actual BlueStacks connection | User-confirmed working | User report, 14 Nov 2026 |
 | In-launcher BlueStacks child-window hosting | Experimental guarded `SetParent` implementation; not yet locally tested | `ExternalWindowHost.cs` and `BlueStacksWindowLocator.cs` |
 | Website favicon display | Implemented; network result still needs visual verification | `WebsiteLogoService.cs` |
@@ -26,10 +26,10 @@
 | Unsupported package-manager fallback | Implemented; displays all installed packages with an unverified status | `AdbClient.cs`, Settings page |
 | Keyboard directional navigation | Implemented in the WPF shell; target-machine behavior pending | `Window_PreviewKeyDown` and spatial focus navigation |
 | XInput controller navigation | Implemented for D-pad/left stick, A, B/Back, and Start; target-machine behavior pending | `XInputGamepadService.cs` |
-| Cross-thread BlueStacks focus coordination | Passed in Windows CI (4/4 tests) | `WindowFocusCoordinatorTests.cs`, run #95 |
-| Local crash reporting | Added local-only WPF/AppDomain/task exception logging; test verification pending | `CrashLogWriter.cs`, `App.xaml.cs` |
+| Cross-thread BlueStacks focus coordination | Passed in Windows CI (4/4 tests) | `WindowFocusCoordinatorTests.cs`, run #98 suite |
+| Local crash reporting | Added local-only WPF/AppDomain/task exception logging; 2 writer tests passed | `CrashLogWriter.cs`, `App.xaml.cs`, run #98 suite |
 
-Run #54 passed the Windows Release build and self-contained publish for the embedded-play and favicon code. The current head adds only a diagnostics-report field; its run #59 is queued. Artifact `JoyLauncher-Windows-x64` from run #54 expires 28 November 2026.
+Run #98 (commit `0f504aa50a1d3a451c1d220280497172ec0c954f`) passed the Windows Release build with 0 compiler warnings and 0 errors, all 6 automated tests, self-contained Windows x64 publish, an 8-second startup smoke test, provenance/checksum generation, and artifact upload. The smoke test verified that the published executable remained running on a hosted Windows runner without BlueStacks installed; it does not prove startup on the target laptop or validate BlueStacks embedding. The `JoyLauncher-Windows-x64` artifact from run #98 expires 29 November 2026. GitHub Actions emitted Node/dependency deprecation notices from its workflow actions; these were non-fatal and are not application compiler warnings.
 
 ## Test matrix
 
