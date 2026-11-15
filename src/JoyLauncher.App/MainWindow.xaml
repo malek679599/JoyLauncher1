@@ -200,7 +200,7 @@
               <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
                 <TextBlock Text="JOYLAUNCHER" FontSize="13" FontWeight="ExtraBold" Foreground="White"/>
                 <TextBlock Text="GAMING MODE" FontSize="9" FontWeight="SemiBold"
-                           Foreground="#83A79A" Margin="0,2,0,0"/>
+                           Foreground="#9CCBFF" Margin="0,2,0,0"/>
               </StackPanel>
             </StackPanel>
 
@@ -217,7 +217,7 @@
               </StackPanel>
               <TextBlock x:Name="BigPictureClock" Text="--:--" FontSize="13" FontWeight="SemiBold"
                          Foreground="#E8EDF2" VerticalAlignment="Center" Margin="0,0,15,0"/>
-              <Border Width="34" Height="34" CornerRadius="17" Background="#3C5550">
+              <Border Width="34" Height="34" CornerRadius="17" Background="#19345F">
                 <TextBlock Text="JL" FontSize="11" FontWeight="Bold" Foreground="White"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Border>
@@ -233,7 +233,7 @@
           </Grid.RowDefinitions>
 
           <Border Grid.Row="0" CornerRadius="18" ClipToBounds="True"
-                  Background="#173B3A" Margin="0,0,0,4">
+                  Background="#10213B" Margin="0,0,0,4">
             <Grid x:Name="BigPictureHeroBackdrop" Background="#10213B">
               <Image x:Name="BigPictureHeroBackgroundImage"
                      Stretch="UniformToFill"
@@ -267,36 +267,36 @@
                 <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="38,12,0,12"
                             MaxWidth="690">
                   <TextBlock x:Name="BigPictureHeroEyebrow" Text="FEATURED APP · LOCAL LIBRARY"
-                             FontSize="11" FontWeight="Bold" Foreground="#A9E6D2"/>
+                             FontSize="11" FontWeight="Bold" Foreground="#9CCBFF"/>
                   <TextBlock x:Name="BigPictureHeroTitle" Text="YOUR LIBRARY"
                              FontSize="43" FontWeight="ExtraBold" Foreground="White"
                              Margin="0,12,0,7" TextTrimming="CharacterEllipsis"/>
                   <TextBlock x:Name="BigPictureHeroDescription"
                              Text="Your Android apps, gathered in one controller-friendly place."
-                             FontSize="14" Foreground="#D5E3E0" TextWrapping="Wrap"
+                             FontSize="14" Foreground="#D5E0F0" TextWrapping="Wrap"
                              LineHeight="22" MaxWidth="590"/>
                   <Button x:Name="BigPictureLaunchButton" Content="▶   LAUNCH APP"
                           Click="BigPictureLaunch_Click" IsEnabled="False"
                           Width="190" HorizontalAlignment="Left" Padding="18,12"
-                          Margin="0,20,0,0" Background="#B6F0D8" Foreground="#10251F"
+                          Margin="0,20,0,0" Background="#4D8DFF" Foreground="#081326"
                           FontSize="13" FontWeight="Bold"/>
                   <TextBlock x:Name="BigPictureStatusText"
                              Text="Connect BlueStacks ADB to load your installed apps."
-                             FontSize="10" Foreground="#B8D0CA" Margin="0,11,0,0"
+                             FontSize="10" Foreground="#A8B5C9" Margin="0,11,0,0"
                              TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <Grid Grid.Column="1" Margin="18,12,34,12">
                   <Border x:Name="BigPictureHeroArtworkSurface" Width="260" Height="260"
-                          CornerRadius="34" Background="#214D45"
+                          CornerRadius="34" Background="#19345F"
                           HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Grid>
-                      <Ellipse Width="220" Height="220" Stroke="#C6F5E3" StrokeThickness="1"
+                      <Ellipse Width="220" Height="220" Stroke="#C9DCFF" StrokeThickness="1"
                                Opacity="0.24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                      <Ellipse Width="160" Height="160" Stroke="#C6F5E3" StrokeThickness="1"
+                      <Ellipse Width="160" Height="160" Stroke="#C9DCFF" StrokeThickness="1"
                                Opacity="0.20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                       <TextBlock x:Name="BigPictureHeroFallback" Text="J" FontSize="120"
-                                 FontWeight="ExtraBold" Foreground="#D3F5E7"
+                                 FontWeight="ExtraBold" Foreground="#E2EDFF"
                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
                       <Image x:Name="BigPictureHeroLogo" Width="148" Height="148"
                              Stretch="Uniform" Visibility="Collapsed"
@@ -352,7 +352,7 @@
           </StackPanel>
           <TextBlock x:Name="BigPictureTabStatus" Text="YOUR LOCAL LIBRARY"
                      HorizontalAlignment="Right" VerticalAlignment="Center"
-                     Margin="0,0,34,0" Foreground="#6F817F" FontSize="9"
+                     Margin="0,0,34,0" Foreground="#72819A" FontSize="9"
                      FontWeight="SemiBold"/>
         </Grid>
 
