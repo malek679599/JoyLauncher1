@@ -1267,12 +1267,6 @@ public partial class MainWindow : Window
 
     private void ExitBigPicture_Click(object sender, RoutedEventArgs e) => ExitBigPictureMode();
 
-    private async void BigPictureLaunch_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: string packageName })
-            await LaunchPackageAsync(packageName);
-    }
-
     private async Task LoadWebsiteLogoAsync(string packageName, Image image, TextBlock fallback)
     {
         var logo = await _websiteLogoService.GetLogoAsync(packageName);
