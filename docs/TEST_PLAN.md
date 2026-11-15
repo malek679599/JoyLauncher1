@@ -11,19 +11,19 @@
 
 | Check | Result | Evidence |
 |---|---|---|
-| Windows Release build | Passed; 0 warnings and 0 errors | GitHub Actions run #103, commit `3ae05aa601b4aa91c3ffd0ccc3fc3d392c9027ca` |
-| Automated regression suite | Passed; 17/17 tests | Run #103 |
-| Self-contained Windows x64 publish | Passed | Run #103 |
-| Hosted Windows startup smoke test | Passed; executable remained open for the 8-second check without BlueStacks | Run #103 |
-| Inno Setup compiler integrity | Passed; pinned Inno Setup 7.1.1 installer SHA-256 and Authenticode publisher signature verified | Run #103 |
-| Per-user Windows installer | Passed; installer compiled successfully | Run #103 |
-| Installer lifecycle smoke test | Passed; silent install created the app and uninstaller, then silent uninstall removed the executable | Run #103 |
-| Portable ZIP and release metadata | Passed; versioned ZIP, build info, release notes, and SHA-256 manifest generated | Run #103 |
-| Release package integrity | Passed; every file listed in the release checksum manifest verified | Run #103 |
-| Versioned release artifact | Uploaded as `JoyLauncher-Release-Windows-x64`; artifact ID `14173769008`, expires 15 December 2026 | [Run #103](https://github.com/malek679599/JoyLauncher1/actions/runs/43745381418) |
-| Library sorting | Passed; name, category, recent, favorites-first, pinned-first, and invalid-mode fallback | `AppLibrarySorterTests.cs`, run #103 |
-| App metadata resolution | Passed; known package mapping and unknown-package humanization | `AppMetadataCatalogTests.cs`, run #103 |
-| Sort preference persistence | Passed; roundtrip, old settings without a sort field, and invalid sort normalization | `LocalPreferencesStoreTests.cs`, run #103 |
+| Windows Release build | Passed; 0 warnings and 0 errors | GitHub Actions run #112, commit `79a0d78c1131ca0c425e8afd8b3c6963c651dc52` |
+| Automated regression suite | Passed; 24/24 tests | Run #112 |
+| Self-contained Windows x64 publish | Passed | Run #112 |
+| Hosted Windows startup smoke test | Passed; executable remained open for the 8-second check without BlueStacks | Run #112 |
+| Inno Setup compiler integrity | Passed; pinned Inno Setup 7.1.1 installer SHA-256 and Authenticode publisher signature verified | Run #112 |
+| Per-user Windows installer | Passed; installer compiled successfully | Run #112 |
+| Installer lifecycle smoke test | Passed; silent install created the app and uninstaller, then silent uninstall removed the executable | Run #112 |
+| Portable ZIP and release metadata | Passed; versioned ZIP, build info, release notes, and SHA-256 manifest generated | Run #112 |
+| Release package integrity | Passed; every file listed in the release checksum manifest verified | Run #112 |
+| Versioned release artifact | Uploaded as `JoyLauncher-Release-Windows-x64`; artifact ID `14184182081`, expires 15 December 2026 | [Run #112](https://github.com/malek679599/JoyLauncher1/actions/runs/43770228044) |
+| Library sorting | Passed; name, category, recent, favorites-first, pinned-first, and invalid-mode fallback | `AppLibrarySorterTests.cs`, run #112 |
+| App metadata resolution | Passed; known package mapping and unknown-package humanization | `AppMetadataCatalogTests.cs`, run #112 |
+| Sort preference persistence | Passed; roundtrip, old settings without a sort field, and invalid sort normalization | `LocalPreferencesStoreTests.cs`, run #112 |
 | ADB endpoint connection and package enumeration | User-confirmed working locally | User report, 14 Nov 2026 |
 | ADB app launch to separate BlueStacks player | User-confirmed working; not embedded | User report, 14 Nov 2026 |
 | Actual BlueStacks connection | User-confirmed working | User report, 14 Nov 2026 |
@@ -31,7 +31,7 @@
 | Target-laptop startup, navigation, and package installation | Not yet confirmed on the user's ThinkPad | Hosted CI does not replace target-machine validation |
 | Keyboard and XInput controller behavior | Implemented; target-machine verification pending | `Window_PreviewKeyDown`, `XInputGamepadService.cs` |
 
-Run #103 passed on commit `3ae05aa601b4aa91c3ffd0ccc3fc3d392c9027ca` with 0 compiler warnings, 0 errors, all 17 tests, self-contained Windows x64 publishing, an 8-second startup smoke test, installer compilation, per-user install/uninstall smoke tests, portable package generation, and release checksum verification. The tag-triggered GitHub Release step was skipped because the run was for `main`, not a version tag. The artifact is retained for 30 days and expires 15 December 2026.
+Run #112 passed on commit `79a0d78c1131ca0c425e8afd8b3c6963c651dc52` with 0 compiler warnings, 0 errors, all 17 tests, self-contained Windows x64 publishing, an 8-second startup smoke test, installer compilation, per-user install/uninstall smoke tests, portable package generation, and release checksum verification. The tag-triggered GitHub Release step was skipped because the run was for `main`, not a version tag. The artifact is retained for 30 days and expires 15 December 2026.
 
 Hosted Windows checks do not prove that JoyLauncher works on the user's ThinkPad, that BlueStacks embeds successfully, or that the earlier user-reported crash is resolved. Those remain explicit manual release gates.
 ## Test matrix
@@ -68,6 +68,7 @@ Hosted Windows checks do not prove that JoyLauncher works on the user's ThinkPad
 | Failure | ADB missing or unreachable | Clear diagnostic; launcher remains usable |
 | Failure | ADB command times out | Process is stopped and UI remains responsive |
 | Failure | Package cannot be launched | Clear command error; no false success |
+| Android diagnostics | Copy recent Minecraft crash summary after a crash | Clipboard contains only matching Java/native crash blocks, or a clear no-match message; Android logs remain on the device and are not uploaded |
 | Navigation | Select each sidebar destination | Correct view and active navigation state are displayed |
 | Navigation | Press Escape from a secondary view | Returns to Home |
 | Navigation | Press Alt+1 through Alt+7 | Switches to Home, Library, Games, Entertainment, Search, Store, and Settings respectively |
@@ -87,6 +88,8 @@ Unhandled WPF dispatcher, AppDomain, and unobserved task exceptions are written 
 
 Crash reports are not uploaded automatically. They include the exception message and stack trace, Windows version, application version, process ID, and local timestamp. The WPF dispatcher handler deliberately does not mark the exception as handled; the application keeps its normal failure behavior while preserving the report.
 
+When Minecraft is installed on the connected BlueStacks instance, Settings also offers **Copy recent Minecraft crash summary**. This action reads at most 700 recent Android logcat lines, selects only crash blocks that name `com.mojang.minecraftpe`, caps the copied summary at 8,000 characters, and reports clearly when no matching crash entry is present. It runs only after the user clicks the button; raw Android logs are not cleared, persisted, or uploaded.
+
 ## Manual local validation sequence
 
 1. Build with `dotnet build JoyLauncher.sln --configuration Release`.
@@ -97,6 +100,7 @@ Crash reports are not uploaded automatically. They include the exception message
 6. Select that instance's Connect action.
 7. Open Library and confirm package identifiers appear.
 8. Launch one known installed package from its verified card and confirm it opens in BlueStacks.
+9. If Minecraft closes unexpectedly, open Settings and use **Copy recent Minecraft crash summary**; confirm the summary identifies the Minecraft package or clearly reports that no matching crash was found.
 9. Confirm the player becomes a child window inside JoyLauncher, not a separate overlay.
 10. Check Settings diagnostics for matching DPI-awareness contexts; if they differ, confirm JoyLauncher refuses attachment and leaves BlueStacks unchanged.
 11. Click Back to JoyLauncher and confirm the standalone player window is restored with its original style and size.

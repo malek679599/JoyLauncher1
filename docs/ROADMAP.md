@@ -36,6 +36,7 @@
 - [x] Connect to a selected endpoint and list verified Android package identifiers.
 - [x] Add launch requests for packages returned by the live ADB query.
 - [x] Add bounded ADB command timeouts and process cleanup.
+- [x] Add user-triggered, package-filtered Android crash summaries for Minecraft without clearing, saving, or uploading raw logcat data.
 - [ ] Complete guarded cross-process child-window hosting with DPI-awareness preflight and a verified restore path when leaving Play.
 - [ ] Validate actual child-window rendering, input, resizing, fullscreen, DPI behavior, and window restoration on the user's BlueStacks setup.
 - [ ] Add user-configurable fallback paths.

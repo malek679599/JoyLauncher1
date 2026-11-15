@@ -15,6 +15,7 @@ A Windows desktop launcher for BlueStacks 5, inspired by the clarity and control
 - F11 toggles fullscreen; Alt+1 through Alt+7 switch the main sections; Escape returns to Home and then exits fullscreen.
 - Keep preferences local and diagnostics clear.
 - Save unhandled exception reports locally under `%LOCALAPPDATA%\\JoyLauncher\\Logs`; never upload crash logs automatically.
+- Offer a manual, package-filtered Minecraft Android crash summary from Settings; read only the recent logcat window on demand and never clear, save, or upload Android logs.
 - Avoid paid APIs, subscriptions, proprietary paid assets, and unnecessary background services.
 
 ## Runtime model

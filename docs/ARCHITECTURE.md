@@ -68,6 +68,8 @@ A launch button is created only for a package identifier returned by the live pa
 
 A zero exit code means the launch request was accepted by the command; it is not proof that the app completed startup or remained open. Errors and timeouts remain visible in launcher status.
 
+When Minecraft is installed on the connected device, Settings exposes a manual crash-summary action. It reads a bounded recent Android `logcat` window only after a click, extracts only crash blocks that name `com.mojang.minecraftpe`, and copies a capped summary to the clipboard. It does not clear logcat, persist raw Android logs, or upload diagnostics.
+
 The featured Minecraft Home button remains a placeholder until a package can be identified from verified metadata or the user selects the correct package. No package identifier is hardcoded as the only supported option.
 
 ## Reliability and privacy
