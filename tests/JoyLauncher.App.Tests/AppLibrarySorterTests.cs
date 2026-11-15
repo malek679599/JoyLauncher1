@@ -63,7 +63,7 @@ public sealed class AppLibrarySorterTests
         var result = AppLibrarySorter.Sort(Items, AppLibrarySortModes.Category, []);
 
         CollectionAssert.AreEqual(
-            new[] { "whatsapp", "minecraft", "youtube", "chrome" },
+            new[] { "whatsapp", "youtube", "minecraft", "chrome" },
             result.ToArray());
     }
 

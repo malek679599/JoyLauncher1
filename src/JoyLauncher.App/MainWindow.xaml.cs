@@ -1381,7 +1381,7 @@ public partial class MainWindow : Window
         try
         {
             var logo = await _websiteLogoService.GetLogoAsync(packageName);
-            if (logo is null || !image.IsLoaded)
+            if (logo is null)
                 return;
 
             image.Source = logo;
