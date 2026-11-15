@@ -23,10 +23,11 @@ public sealed class AndroidCrashLogParserTests
 
         var summary = AndroidCrashLogParser.Extract(logcat, MinecraftPackage);
 
-        StringAssert.Contains(summary, "FATAL EXCEPTION");
-        StringAssert.Contains(summary, MinecraftPackage);
-        StringAssert.Contains(summary, "IllegalStateException");
-        Assert.IsFalse(summary.Contains("com.example.unrelated", StringComparison.Ordinal));
+        Assert.IsTrue(summary.CrashFound);
+        StringAssert.Contains(summary.Text, "FATAL EXCEPTION");
+        StringAssert.Contains(summary.Text, MinecraftPackage);
+        StringAssert.Contains(summary.Text, "IllegalStateException");
+        Assert.IsFalse(summary.Text.Contains("com.example.unrelated", StringComparison.Ordinal));
     }
 
     [TestMethod]
@@ -40,9 +41,10 @@ public sealed class AndroidCrashLogParserTests
 
         var summary = AndroidCrashLogParser.Extract(logcat, MinecraftPackage);
 
-        StringAssert.Contains(summary, "Fatal signal 11");
-        StringAssert.Contains(summary, MinecraftPackage);
-        StringAssert.Contains(summary, "libminecraft.so");
+        Assert.IsTrue(summary.CrashFound);
+        StringAssert.Contains(summary.Text, "Fatal signal 11");
+        StringAssert.Contains(summary.Text, MinecraftPackage);
+        StringAssert.Contains(summary.Text, "libminecraft.so");
     }
 
     [TestMethod]
@@ -55,8 +57,9 @@ public sealed class AndroidCrashLogParserTests
 
         var summary = AndroidCrashLogParser.Extract(logcat, MinecraftPackage);
 
-        StringAssert.Contains(summary, "No recent Android crash entry");
-        StringAssert.Contains(summary, MinecraftPackage);
+        Assert.IsFalse(summary.CrashFound);
+        StringAssert.Contains(summary.Text, "No recent Android crash entry");
+        StringAssert.Contains(summary.Text, MinecraftPackage);
     }
 
     [TestMethod]
@@ -75,7 +78,7 @@ public sealed class AndroidCrashLogParserTests
             MinecraftPackage,
             maxCharacters: 256);
 
-        Assert.IsTrue(summary.Length <= 256, $"Expected at most 256 characters, got {summary.Length}.");
-        StringAssert.Contains(summary, "[summary truncated]");
+        Assert.IsTrue(summary.Text.Length <= 256, $"Expected at most 256 characters, got {summary.Text.Length}.");
+        StringAssert.Contains(summary.Text, "[summary truncated]");
     }
 }
