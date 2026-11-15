@@ -107,3 +107,13 @@ A release candidate is not considered validated until it has:
 5. Package enumeration and verified app-launch checks.
 6. Failure-path checks.
 7. A documented list of untested or unsupported behavior.
+
+
+## Big Picture mode and embedded toolbar validation
+
+- [ ] Open Big Picture from the sidebar or press F10; confirm full-screen presentation.
+- [ ] Navigate the large app tiles with arrow keys or controller D-pad/left stick; A/Enter launches; B/Escape exits.
+- [ ] Launch Minecraft from Big Picture; confirm JoyLauncher returns to Big Picture after leaving the game.
+- [ ] In the embedded Play view, use **Hide top bar · F11** once. Confirm the BlueStacks toolbar disappears and the player remains parented to JoyLauncher.
+- [ ] Use the same control again to restore the toolbar.
+- [ ] Copy diagnostics and include the **BlueStacks embedded child-window inventory** if the toolbar remains visible.

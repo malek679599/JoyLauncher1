@@ -250,6 +250,81 @@ public sealed class ExternalWindowHost : HwndHost
     public void FocusEmbeddedWindow() => FocusDockedWindow();
 
     /// <summary>
+    /// Sends BlueStacks' documented F11 fullscreen toggle to the embedded player.
+    /// This is user-triggered and reversible by pressing the button again.
+    /// </summary>
+    public bool TryTogglePlayerFullscreen(out string diagnostic)
+    {
+        diagnostic = string.Empty;
+        if (!IsDocked)
+        {
+            diagnostic = "The BlueStacks player is not currently embedded; the fullscreen shortcut was not sent.";
+            return false;
+        }
+
+        Marshal.SetLastPInvokeError(0);
+        var downPosted = PostMessage(_embeddedWindow, WmKeyDown, new IntPtr(VkF11), new IntPtr(1));
+        var downError = Marshal.GetLastWin32Error();
+        Marshal.SetLastPInvokeError(0);
+        var upPosted = PostMessage(_embeddedWindow, WmKeyUp, new IntPtr(VkF11), new IntPtr(unchecked((int)0xC0000001)));
+        var upError = Marshal.GetLastWin32Error();
+
+        if (!downPosted || !upPosted)
+        {
+            var code = !downPosted ? downError : upError;
+            diagnostic = $"Windows could not post the F11 key to BlueStacks: {FormatWin32Error(code)}";
+            return false;
+        }
+
+        diagnostic = "F11 fullscreen toggle sent to BlueStacks. If its top toolbar disappears, immersive mode is active; click again or press F11 to restore the toolbar.";
+        return true;
+    }
+
+    /// <summary>
+    /// Lists native descendants of the embedded player. This is diagnostic-only:
+    /// it does not hide or resize any BlueStacks-owned child window.
+    /// </summary>
+    public string GetChildWindowInventory()
+    {
+        if (!IsDocked)
+            return "No embedded BlueStacks window is available for child-window inspection.";
+
+        if (!GetWindowRect(_embeddedWindow, out var parentBounds))
+            return "Could not read the embedded player bounds for child-window inspection.";
+
+        var rows = new System.Collections.Generic.List<string>();
+        EnumChildWindows(_embeddedWindow, (child, _) =>
+        {
+            if (rows.Count >= 80)
+                return false;
+
+            GetWindowThreadProcessId(child, out var childPid);
+            GetWindowRect(child, out var bounds);
+            var className = new System.Text.StringBuilder(256);
+            var title = new System.Text.StringBuilder(256);
+            GetClassName(child, className, className.Capacity);
+            GetWindowText(child, title, title.Capacity);
+
+            var relativeX = bounds.Left - parentBounds.Left;
+            var relativeY = bounds.Top - parentBounds.Top;
+            var width = Math.Max(0, bounds.Right - bounds.Left);
+            var height = Math.Max(0, bounds.Bottom - bounds.Top);
+
+            rows.Add(string.Format(
+                "HWND 0x{0:X} | PID {1} | visible {2} | class {3} | x {4} y {5} w {6} h {7} | title {8}",
+                child.ToInt64(), childPid, IsWindowVisible(child),
+                className.ToString(), relativeX, relativeY, width, height,
+                title.ToString()));
+            return true;
+        }, IntPtr.Zero);
+
+        return rows.Count == 0
+            ? "No native child HWNDs were enumerated. The BlueStacks toolbar may be drawn inside its main player window."
+            : string.Join(Environment.NewLine, rows);
+    }
+
+
+    /// <summary>
     /// Returns the BlueStacks player to a normal desktop top-level window and restores
     /// the exact style, extended style, owner, and screen bounds captured before attach.
     /// </summary>
@@ -352,6 +427,26 @@ public sealed class ExternalWindowHost : HwndHost
 
     [DllImport("user32.dll")]
     private static extern bool IsWindow(IntPtr hWnd);
+
+    private const uint WmKeyDown = 0x0100;
+    private const uint WmKeyUp = 0x0101;
+    private const int VkF11 = 0x7A;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool PostMessage(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
+
+    private delegate bool EnumChildWindowsCallback(IntPtr hWnd, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumChildWindows(IntPtr parent, EnumChildWindowsCallback callback, IntPtr lParam);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetClassNameW")]
+    private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder className, int maxCount);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetWindowTextW")]
+    private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int maxCount);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetAncestor(IntPtr hWnd, uint flags);

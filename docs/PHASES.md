@@ -27,7 +27,7 @@ Exit criteria:
 
 ## Phase 3 — Embedded Play experience
 
-**State: active blocker; experimental implementation updated, local result pending.**
+**State: user-reported successful embedding; immersive toolbar cleanup and regression testing underway.**
 
 Scope: show the BlueStacks player as a real child window inside the Play viewport, preserve mouse/keyboard interaction, track viewport size, and restore the player when leaving Play.
 
@@ -40,9 +40,10 @@ Engineering approach:
 - If child hosting is unavailable, keep the app launch functional in the standalone BlueStacks window and show the precise reason.
 
 Exit criteria:
-- [ ] BlueStacks player is visibly contained within the Play area.
-- [ ] Mouse and keyboard input work inside the game.
-- [ ] Resizing and fullscreen work without black/blank rendering.
+- [x] User reports the BlueStacks player is visibly contained within the Play area.
+- [ ] Confirm mouse and keyboard input work inside the game after the latest DPI-manifest build.
+- [ ] Verify resizing and fullscreen work without black/blank rendering.
+- [ ] Remove the BlueStacks player toolbar from the embedded Play surface; use the documented F11 immersive toggle as the first reversible test and inspect native child HWNDs before attempting any targeted hide.
 - [ ] Back, Escape, and close restore a normal standalone player window.
 - [ ] DPI mismatch and permission failures produce accurate diagnostics without corrupting BlueStacks.
 
@@ -63,13 +64,14 @@ Exit criteria:
 
 ## Phase 5 — Interface polish and controls
 
-**State: keyboard and XInput navigation implemented; target-machine verification remains open.**
+**State: keyboard and XInput navigation implemented; Big Picture mode added, target-machine verification remains open.**
 
 Scope: final Home and Library composition, original JoyLauncher artwork, responsive layout, spatial keyboard focus navigation, and Xbox-compatible controller support.
 
 Exit criteria:
 - [x] Initial dark navy/blue design system and vector hero artwork.
-- [ ] Complete Home and Library compositions.
+- [x] Add a full-screen Big Picture launcher surface with large app tiles, Minecraft feature action, keyboard navigation, and controller Start/B/Escape controls.
+- [ ] Complete remaining Home and Library composition polish.
 - [x] Add directional keyboard focus navigation while preserving text-field and Play-area input.
 - [x] Add XInput D-pad/left-stick navigation, A/select, B/back, and Start/fullscreen handling.
 - [ ] Verify keyboard and controller behavior on the target laptop; test that gamepad input passes through to BlueStacks while Play is active.

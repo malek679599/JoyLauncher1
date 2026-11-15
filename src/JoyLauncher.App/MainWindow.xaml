@@ -14,6 +14,7 @@
         KeyDown="Window_KeyDown"
         PreviewKeyDown="Window_PreviewKeyDown">
     <Grid>
+      <Grid x:Name="StandardShell">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="232"/>
             <ColumnDefinition Width="*"/>
@@ -45,7 +46,9 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <Button Content="⚙   Settings" Tag="Settings" Click="Navigation_Click" Margin="0,12,0,0"/>
+                    <Button Content="▣   Big Picture Mode" Click="BigPictureMode_Click" Margin="0,12,0,5"
+                            Background="{StaticResource AccentSoftBrush}" ToolTip="Open the full-screen, controller-friendly launcher (F10 / controller Start)."/>
+                    <Button Content="⚙   Settings" Tag="Settings" Click="Navigation_Click" Margin="0,0,0,0"/>
                 </StackPanel>
 
                 <StackPanel>
@@ -133,8 +136,13 @@
                 <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="True">
                     <Button DockPanel.Dock="Left" Content="←  Back to JoyLauncher" Click="ReturnToLauncher_Click"
                             Background="{StaticResource AccentSoftBrush}" Margin="0,0,16,0"/>
-                    <Button DockPanel.Dock="Right" Content="Retry embedding" Click="RetryEmbedding_Click"
-                            Background="{StaticResource SurfaceBrush}" Margin="12,0,0,0"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="Hide top bar · F11" Click="TogglePlayerFullscreen_Click"
+                                Background="{StaticResource AccentSoftBrush}" Margin="8,0,0,0"
+                                ToolTip="Send BlueStacks' documented F11 fullscreen toggle. Click again to restore."/>
+                        <Button Content="Retry embedding" Click="RetryEmbedding_Click"
+                                Background="{StaticResource SurfaceBrush}" Margin="8,0,0,0"/>
+                    </StackPanel>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock x:Name="PlayingAppTitle" Text="Now playing" FontSize="18" FontWeight="Bold"/>
                         <TextBlock x:Name="PlayingStatusText" Text="Preparing the BlueStacks player surface…"
@@ -146,5 +154,94 @@
                 </Border>
             </Grid>
         </Grid>
+
+      </Grid>
+      <Grid x:Name="BigPictureOverlay" Visibility="Collapsed" Panel.ZIndex="100"
+            Background="#080D18" Focusable="False">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="54,30,54,12" LastChildFill="False">
+          <StackPanel DockPanel.Dock="Left">
+            <TextBlock Text="JOYLAUNCHER" FontSize="15" FontWeight="ExtraBold"
+                       Foreground="#8DB8FF" />
+            <TextBlock Text="BIG PICTURE MODE" FontSize="30" FontWeight="Bold"
+                       Foreground="White" Margin="0,4,0,0"/>
+          </StackPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="F10 TOGGLE  ·  D-PAD / STICK NAVIGATION  ·  A SELECT  ·  B BACK"
+                       Foreground="#A8B5C9" FontSize="11" VerticalAlignment="Center"
+                       Margin="0,0,20,0"/>
+            <Button x:Name="BigPictureExitButton" Content="Exit Big Picture"
+                    Click="ExitBigPicture_Click" Padding="20,13"
+                    Background="#19345F" Foreground="White"/>
+          </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="1" Margin="54,18,54,44">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="230"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+
+          <Border Grid.Row="0" CornerRadius="22" Background="#142642"
+                  Padding="34" ClipToBounds="True">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.3*"/>
+                <ColumnDefinition Width="0.7*"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel Grid.Column="0" VerticalAlignment="Center" MaxWidth="760">
+                <TextBlock Text="YOUR ANDROID LIBRARY, READY FOR THE BIG SCREEN"
+                           Foreground="#8DB8FF" FontSize="12" FontWeight="Bold"/>
+                <TextBlock Text="Play from one place." FontSize="38"
+                           FontWeight="ExtraBold" Foreground="White" Margin="0,10,0,6"/>
+                <TextBlock x:Name="BigPictureStatusText"
+                           Text="Connect to BlueStacks to load your installed apps."
+                           FontSize="14" Foreground="#C4D2E6" TextWrapping="Wrap"/>
+                <Button x:Name="BigPictureMinecraftButton" Content="▶   Play Minecraft"
+                        Click="BigPictureMinecraft_Click" IsEnabled="False"
+                        Tag="{x:Null}" Width="230" HorizontalAlignment="Left"
+                        Padding="20,13" Margin="0,18,0,0"
+                        Background="{StaticResource AccentBrush}" Foreground="White"
+                        FontSize="16" FontWeight="Bold"/>
+              </StackPanel>
+              <Border Grid.Column="1" Background="#1A3151" CornerRadius="18"
+                      Margin="30,0,0,0">
+                <Grid>
+                  <Ellipse Width="190" Height="190" Fill="#294C78" Opacity="0.45"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  <Ellipse Width="145" Height="145" Stroke="#6D9ED8" StrokeThickness="2"
+                           Opacity="0.45" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  <TextBlock Text="JL" FontSize="76" FontWeight="ExtraBold"
+                             Foreground="#A9CAFF" HorizontalAlignment="Center"
+                             VerticalAlignment="Center"/>
+                  <TextBlock Text="WINDOWS  ·  ANDROID  ·  ONE LIBRARY"
+                             FontSize="9" Foreground="#A8B5C9"
+                             HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                             Margin="0,0,0,14"/>
+                </Grid>
+              </Border>
+            </Grid>
+          </Border>
+
+          <DockPanel Grid.Row="1" Margin="0,22,0,12">
+            <TextBlock Text="Your apps" FontSize="23" FontWeight="Bold"
+                       Foreground="White"/>
+            <TextBlock x:Name="BigPictureAppsCount" DockPanel.Dock="Right"
+                       Text="PREVIEW LIBRARY" FontSize="11"
+                       Foreground="#A8B5C9" VerticalAlignment="Center"/>
+          </DockPanel>
+
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled"
+                        Focusable="False">
+            <WrapPanel x:Name="BigPictureAppGrid"/>
+          </ScrollViewer>
+        </Grid>
+      </Grid>
     </Grid>
 </Window>

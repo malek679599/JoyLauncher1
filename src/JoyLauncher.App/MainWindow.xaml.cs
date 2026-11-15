@@ -28,6 +28,9 @@ public partial class MainWindow : Window
     private string? _windowEmbeddingDiagnostic;
     private string? _windowDiscoveryDiagnostic;
     private bool _isFullscreen;
+    private bool _isBigPictureMode;
+    private bool _wasBigPictureBeforePlay;
+    private bool _bigPictureOwnedFullscreen;
     private WindowStyle _previousWindowStyle;
     private ResizeMode _previousResizeMode;
 
@@ -564,6 +567,9 @@ public partial class MainWindow : Window
             $"Embedded player window handle: {(BlueStacksWindowHost.DockedWindowHandle == IntPtr.Zero ? "None" : $"0x{BlueStacksWindowHost.DockedWindowHandle.ToInt64():X}")}",
             $"Player-window embedding detail: {_windowEmbeddingDiagnostic ?? "None"}",
             $"Window discovery detail: {_windowDiscoveryDiagnostic ?? "None"}",
+            "BlueStacks embedded child-window inventory:",
+            BlueStacksWindowHost.GetChildWindowInventory(),
+            $"Big Picture mode active: {_isBigPictureMode}",
             $"Play page visible: {PlayPage.Visibility == Visibility.Visible}",
             $"Latest runtime error: {_adbError ?? "None"}"
         ]);
@@ -629,6 +635,7 @@ public partial class MainWindow : Window
                     : "ADB is connected, but no packages were returned. Refresh the connection or check the Android runtime."
                 : $"Showing {apps.Length} of {_launchablePackages.Count} launchable apps returned by BlueStacks."
             : "These are sample tiles, not verified installed apps. Connect BlueStacks ADB to load your actual library.";
+        RefreshBigPictureContent();
     }
 
     private IReadOnlyList<AppEntry> GetLiveApps() =>
@@ -660,6 +667,10 @@ public partial class MainWindow : Window
             ? "Connect ADB and install Minecraft in this BlueStacks instance to enable this action."
             : $"Launch verified package {minecraftPackage}";
         LaunchFeaturedButton.Opacity = minecraftPackage is null ? 0.62 : 1.0;
+        BigPictureMinecraftButton.Tag = minecraftPackage;
+        BigPictureMinecraftButton.IsEnabled = minecraftPackage is not null;
+        BigPictureMinecraftButton.Content = minecraftPackage is null ? "Minecraft not detected" : "▶   Play Minecraft";
+        BigPictureMinecraftButton.Opacity = minecraftPackage is null ? 0.55 : 1.0;
     }
 
     private Border CreateAppCard(AppEntry app)
@@ -775,6 +786,161 @@ public partial class MainWindow : Window
             Background = (Brush)FindResource("SurfaceBrush"),
             Child = content
         };
+    }
+
+    private void RefreshBigPictureContent()
+    {
+        BigPictureAppGrid.Children.Clear();
+        var hasLiveApps = _connectedDeviceSerial is not null;
+        var apps = hasLiveApps ? GetLiveApps() : SampleApps;
+
+        foreach (var app in apps
+                     .OrderByDescending(IsPinned)
+                     .ThenByDescending(IsFavorite)
+                     .ThenBy(app => RecentIndex(app.PackageName))
+                     .ThenBy(app => app.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            BigPictureAppGrid.Children.Add(CreateBigPictureAppCard(app));
+        }
+
+        BigPictureAppsCount.Text = hasLiveApps
+            ? $"{apps.Count} LIVE APPS  ·  {_connectedDeviceSerial}"
+            : $"{apps.Count} PREVIEW TILES  ·  CONNECT ADB TO LOAD YOUR LIBRARY";
+
+        BigPictureStatusText.Text = hasLiveApps
+            ? $"{_launchablePackages.Count} launchable apps are ready from your connected BlueStacks instance."
+            : "Preview tiles only. Connect to your BlueStacks ADB instance to load and launch your installed apps.";
+
+        var minecraftPackage = _launchablePackages.FirstOrDefault(packageName =>
+            string.Equals(packageName, "com.mojang.minecraftpe", StringComparison.OrdinalIgnoreCase));
+        BigPictureMinecraftButton.Tag = minecraftPackage;
+        BigPictureMinecraftButton.IsEnabled = minecraftPackage is not null;
+        BigPictureMinecraftButton.Content = minecraftPackage is null
+            ? "Minecraft not detected"
+            : "▶   Play Minecraft";
+        BigPictureMinecraftButton.Opacity = minecraftPackage is null ? 0.55 : 1.0;
+    }
+
+    private Button CreateBigPictureAppCard(AppEntry app)
+    {
+        var fallback = new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(app.Name) ? "?" : app.Name[..1].ToUpperInvariant(),
+            FontSize = 28,
+            FontWeight = FontWeights.Bold,
+            Foreground = (Brush)FindResource("AccentBrush"),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var logoImage = new Image
+        {
+            Width = 62,
+            Height = 62,
+            Stretch = Stretch.Uniform,
+            Visibility = Visibility.Collapsed
+        };
+        var logoSurface = new Grid
+        {
+            Width = 72,
+            Height = 72,
+            Children = { fallback, logoImage }
+        };
+
+        var content = new StackPanel();
+        content.Children.Add(new Border
+        {
+            Width = 82,
+            Height = 82,
+            CornerRadius = new CornerRadius(16),
+            Background = (Brush)FindResource("ElevatedBrush"),
+            Padding = new Thickness(5),
+            Margin = new Thickness(0, 0, 0, 18),
+            Child = logoSurface
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = app.Name,
+            FontSize = 22,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = app.Category.ToUpperInvariant() + (app.IsVerified ? "  ·  READY" : "  ·  PREVIEW"),
+            FontSize = 11,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("SecondaryTextBrush"),
+            Margin = new Thickness(0, 7, 0, 0)
+        });
+
+        var button = new Button
+        {
+            Content = content,
+            Tag = app.PackageName,
+            Width = 258,
+            Height = 214,
+            Margin = new Thickness(0, 0, 16, 16),
+            Padding = new Thickness(22),
+            Background = (Brush)FindResource("SurfaceBrush"),
+            Foreground = Brushes.White,
+            HorizontalContentAlignment = HorizontalAlignment.Left,
+            VerticalContentAlignment = VerticalAlignment.Stretch,
+            IsEnabled = app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName),
+            ToolTip = app.IsVerified ? $"Launch {app.Name}" : "Preview only · connect ADB to enable launching"
+        };
+        button.Click += LaunchVerifiedPackage_Click;
+
+        if (app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName))
+            _ = LoadWebsiteLogoAsync(app.PackageName, logoImage, fallback);
+
+        return button;
+    }
+
+    private void EnterBigPictureMode()
+    {
+        if (_isBigPictureMode || PlayPage.Visibility == Visibility.Visible)
+            return;
+
+        _bigPictureOwnedFullscreen = !_isFullscreen;
+        if (_bigPictureOwnedFullscreen)
+            ToggleFullscreen();
+
+        RefreshBigPictureContent();
+        StandardShell.Visibility = Visibility.Collapsed;
+        BigPictureOverlay.Visibility = Visibility.Visible;
+        _isBigPictureMode = true;
+
+        if (BigPictureMinecraftButton.IsEnabled)
+            BigPictureMinecraftButton.Focus();
+        else
+            BigPictureExitButton.Focus();
+    }
+
+    private void ExitBigPictureMode()
+    {
+        if (!_isBigPictureMode)
+            return;
+
+        _isBigPictureMode = false;
+        BigPictureOverlay.Visibility = Visibility.Collapsed;
+        StandardShell.Visibility = Visibility.Visible;
+
+        if (_bigPictureOwnedFullscreen && _isFullscreen)
+            ToggleFullscreen();
+
+        _bigPictureOwnedFullscreen = false;
+        Navigation_Click(new Button { Tag = "Home" }, new RoutedEventArgs());
+    }
+
+    private void BigPictureMode_Click(object sender, RoutedEventArgs e) => EnterBigPictureMode();
+
+    private void ExitBigPicture_Click(object sender, RoutedEventArgs e) => ExitBigPictureMode();
+
+    private async void BigPictureMinecraft_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string packageName })
+            await LaunchPackageAsync(packageName);
     }
 
     private async Task LoadWebsiteLogoAsync(string packageName, Image image, TextBlock fallback)
@@ -971,6 +1137,14 @@ public partial class MainWindow : Window
             string.Equals(item.PackageName, packageName, StringComparison.OrdinalIgnoreCase));
         var displayName = app?.Name ?? packageName;
 
+        _wasBigPictureBeforePlay = _isBigPictureMode;
+        if (_isBigPictureMode)
+        {
+            _isBigPictureMode = false;
+            BigPictureOverlay.Visibility = Visibility.Collapsed;
+            StandardShell.Visibility = Visibility.Visible;
+        }
+
         PlayingAppTitle.Text = displayName;
         PlayingStatusText.Text = "Waiting for the BlueStacks player window…";
         PageTitle.Text = "Now playing";
@@ -1032,6 +1206,20 @@ public partial class MainWindow : Window
         await TryEmbedRunningPlayerAsync();
     }
 
+    private void TogglePlayerFullscreen_Click(object sender, RoutedEventArgs e)
+    {
+        if (BlueStacksWindowHost.TryTogglePlayerFullscreen(out var detail))
+        {
+            PlayingStatusText.Text = detail;
+            RuntimeStatusText.Text = "Sent F11 fullscreen toggle to BlueStacks";
+        }
+        else
+        {
+            PlayingStatusText.Text = detail;
+            _adbError = detail;
+        }
+    }
+
     private void ReturnToLauncher_Click(object sender, RoutedEventArgs e)
     {
         ReturnFromPlayView(navigateHome: true);
@@ -1042,6 +1230,20 @@ public partial class MainWindow : Window
         BlueStacksWindowHost.Detach();
         PlayPage.Visibility = Visibility.Collapsed;
         MainContentScrollViewer.Visibility = Visibility.Visible;
+
+        if (_wasBigPictureBeforePlay)
+        {
+            _wasBigPictureBeforePlay = false;
+            RefreshBigPictureContent();
+            StandardShell.Visibility = Visibility.Collapsed;
+            BigPictureOverlay.Visibility = Visibility.Visible;
+            _isBigPictureMode = true;
+            if (BigPictureMinecraftButton.IsEnabled)
+                BigPictureMinecraftButton.Focus();
+            else
+                BigPictureExitButton.Focus();
+            return;
+        }
 
         if (navigateHome)
             Navigation_Click(new Button { Tag = "Home" }, new RoutedEventArgs());
@@ -1173,11 +1375,16 @@ public partial class MainWindow : Window
                     focusedButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 break;
             case GamepadNavigationButton.Back:
-                if (DynamicPageContent.Visibility == Visibility.Visible)
+                if (_isBigPictureMode)
+                    ExitBigPictureMode();
+                else if (DynamicPageContent.Visibility == Visibility.Visible)
                     Navigation_Click(new Button { Tag = "Home" }, new RoutedEventArgs());
                 break;
             case GamepadNavigationButton.Start:
-                ToggleFullscreen();
+                if (_isBigPictureMode)
+                    ExitBigPictureMode();
+                else
+                    EnterBigPictureMode();
                 break;
         }
     }
@@ -1212,9 +1419,27 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.Key == Key.Escape && _isBigPictureMode)
+        {
+            ExitBigPictureMode();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F10 && PlayPage.Visibility != Visibility.Visible)
+        {
+            if (_isBigPictureMode)
+                ExitBigPictureMode();
+            else
+                EnterBigPictureMode();
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.F11)
         {
-            ToggleFullscreen();
+            if (!_isBigPictureMode)
+                ToggleFullscreen();
             e.Handled = true;
             return;
         }
