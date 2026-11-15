@@ -37,6 +37,7 @@ Engineering approach:
 - Refuse cross-process SetParent when the contexts differ; Windows documents that an incompatible cross-process parent change can forcibly reset the child process DPI-awareness mode.
 - When contexts match, switch the player style to WS_CHILD, call SetParent, size it to the Play surface client area, and verify the parent HWND.
 - Restore the original top-level style, extended style, owner, and screen bounds on Back, Escape, or launcher close.
+- When the player belongs to another UI thread, temporarily attach input queues before SetFocus, verify focus, and always detach in a finally block.
 - If child hosting is unavailable, keep the app launch functional in the standalone BlueStacks window and show the precise reason.
 
 Exit criteria:

@@ -26,6 +26,7 @@
 | Unsupported package-manager fallback | Implemented; displays all installed packages with an unverified status | `AdbClient.cs`, Settings page |
 | Keyboard directional navigation | Implemented in the WPF shell; target-machine behavior pending | `Window_PreviewKeyDown` and spatial focus navigation |
 | XInput controller navigation | Implemented for D-pad/left stick, A, B/Back, and Start; target-machine behavior pending | `XInputGamepadService.cs` |
+| Cross-thread BlueStacks focus coordination | Regression suite added; the initial run confirmed 3 missing behaviors (1 passed, 3 failed); fix verification pending | `WindowFocusCoordinatorTests.cs` |
 
 Run #54 passed the Windows Release build and self-contained publish for the embedded-play and favicon code. The current head adds only a diagnostics-report field; its run #59 is queued. Artifact `JoyLauncher-Windows-x64` from run #54 expires 28 November 2026.
 
@@ -67,6 +68,7 @@ Run #54 passed the Windows Release build and self-contained publish for the embe
 | Controller | Connect an XInput-compatible controller and use D-pad / left stick | Focus moves through visible launcher controls |
 | Controller | Press A, B, and Start | A activates the focused button, B returns from a secondary page, and Start toggles fullscreen |
 | Controller / Play | Launch an app and use the controller in the Play area | JoyLauncher does not issue launcher navigation actions while the Play page is active; confirm BlueStacks still receives controller input |
+| Embedded keyboard focus | Attach a player owned by a different UI thread | Input queues attach before SetFocus and detach even when focus fails; copied diagnostics report any Win32 failure |
 | Performance | Idle on Home | No unnecessary busy loop or repeated process spawning |
 
 ## Manual local validation sequence

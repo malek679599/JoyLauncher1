@@ -41,6 +41,7 @@ public sealed class ExternalWindowHost : HwndHost
     private IntPtr _originalExStyle;
     private NativeRect _originalBounds;
     private bool _hasOriginalState;
+    private readonly WindowFocusCoordinator _focusCoordinator = new(new Win32WindowFocusApi());
 
     public ExternalWindowHost()
     {
@@ -62,6 +63,7 @@ public sealed class ExternalWindowHost : HwndHost
     public IntPtr DockedWindowHandle => IsDocked ? _embeddedWindow : IntPtr.Zero;
     public string? LastDockingDiagnostic { get; private set; }
     public string? LastAttachDiagnostic => LastDockingDiagnostic;
+    public string? LastFocusDiagnostic { get; private set; }
 
     protected override HandleRef BuildWindowCore(HandleRef hwndParent)
     {
@@ -240,11 +242,19 @@ public sealed class ExternalWindowHost : HwndHost
 
     public void FocusDockedWindow()
     {
-        if (IsDocked)
+        if (!IsDocked)
         {
-            SetForegroundWindow(_ownerWindow);
-            SetFocus(_embeddedWindow);
+            LastFocusDiagnostic = "The BlueStacks player is not currently docked; focus was not changed.";
+            return;
         }
+
+        if (!_focusCoordinator.TryFocus(_embeddedWindow, _ownerWindow, out var diagnostic))
+        {
+            LastFocusDiagnostic = diagnostic;
+            return;
+        }
+
+        LastFocusDiagnostic = diagnostic;
     }
 
     public void FocusEmbeddedWindow() => FocusDockedWindow();
@@ -491,12 +501,6 @@ public sealed class ExternalWindowHost : HwndHost
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int command);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr SetFocus(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr GetWindowDpiAwarenessContext(IntPtr hWnd);

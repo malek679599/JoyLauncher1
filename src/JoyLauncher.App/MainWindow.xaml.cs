@@ -575,6 +575,7 @@ public partial class MainWindow : Window
             $"BlueStacks player embedded in Play area: {BlueStacksWindowHost.IsDocked}",
             $"Embedded player window handle: {(BlueStacksWindowHost.DockedWindowHandle == IntPtr.Zero ? "None" : $"0x{BlueStacksWindowHost.DockedWindowHandle.ToInt64():X}")}",
             $"Player-window embedding detail: {_windowEmbeddingDiagnostic ?? "None"}",
+            $"Player-window focus detail: {BlueStacksWindowHost.LastFocusDiagnostic ?? "Not attempted"}",
             $"Window discovery detail: {_windowDiscoveryDiagnostic ?? "None"}",
             "BlueStacks embedded child-window inventory:",
             BlueStacksWindowHost.GetChildWindowInventory(),
