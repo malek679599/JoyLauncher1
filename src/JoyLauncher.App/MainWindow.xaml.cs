@@ -32,6 +32,8 @@ public partial class MainWindow : Window
     private string? _launchabilityDetectionError;
     private string? _connectedDeviceSerial;
     private string? _adbError;
+    private string? _libraryFeedbackMessage;
+    private bool _libraryFeedbackFailed;
     private string? _windowEmbeddingDiagnostic;
     private string? _windowDiscoveryDiagnostic;
     private bool _isFullscreen;
@@ -54,23 +56,6 @@ public partial class MainWindow : Window
         new("Camera", "System", "Camera app"),
         new("Settings", "System", "Android settings")
     ];
-
-    private static readonly IReadOnlyDictionary<string, (string Name, string Category, string Description)> KnownPackages =
-        new Dictionary<string, (string, string, string)>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["com.mojang.minecraftpe"] = ("Minecraft", "Games", "Minecraft for Android"),
-            ["com.google.android.youtube"] = ("YouTube", "Entertainment", "Video and creator content"),
-            ["com.google.android.apps.youtube.kids"] = ("YouTube Kids", "Entertainment", "Family-focused video app"),
-            ["com.google.android.apps.youtube.music"] = ("YouTube Music", "Entertainment", "Music and audio"),
-            ["com.google.android.videos"] = ("Google TV", "Entertainment", "Movies and television"),
-            ["com.android.chrome"] = ("Chrome", "Productivity", "Web browser"),
-            ["com.google.android.gm"] = ("Gmail", "Productivity", "Email"),
-            ["com.google.android.apps.maps"] = ("Google Maps", "Productivity", "Maps and navigation"),
-            ["com.google.android.apps.photos"] = ("Google Photos", "Productivity", "Photo library"),
-            ["com.android.vending"] = ("Google Play Store", "Store", "Android app marketplace"),
-            ["com.android.settings"] = ("Android Settings", "System", "Android system settings"),
-            ["com.google.android.googlequicksearchbox"] = ("Google", "Productivity", "Search and assistant")
-        };
 
     public MainWindow()
     {
@@ -251,50 +236,149 @@ public partial class MainWindow : Window
                 : $"Installed packages from {_connectedDeviceSerial}. Launcher-activity discovery is unavailable, so this is a compatibility fallback."
             : "These preview entries demonstrate the layout. They are not yet verified as installed.");
 
-        var filters = new StackPanel
+        if (!string.IsNullOrWhiteSpace(_libraryFeedbackMessage))
+            root.Children.Add(CreateInfoCard(
+                "Latest library action",
+                _libraryFeedbackFailed ? "ACTION FAILED" : "ACTION ACCEPTED",
+                _libraryFeedbackMessage));
+
+        var toolbar = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Margin = new Thickness(0, 10, 0, 18)
+            Margin = new Thickness(0, 8, 0, 12)
         };
-        var grid = new WrapPanel();
+        var search = new TextBox
+        {
+            Width = 280,
+            Height = 38,
+            FontSize = 13,
+            Padding = new Thickness(12, 8, 12, 8),
+            Margin = new Thickness(0, 0, 12, 0),
+            Background = (Brush)FindResource("SurfaceBrush"),
+            Foreground = (Brush)FindResource("PrimaryTextBrush"),
+            BorderThickness = new Thickness(0),
+            CaretBrush = (Brush)FindResource("AccentBrush"),
+            ToolTip = "Search this library by name, category, or package ID"
+        };
+        var sortLabel = new TextBlock
+        {
+            Text = "SORT BY",
+            FontSize = 9,
+            FontWeight = FontWeights.Bold,
+            Foreground = (Brush)FindResource("SecondaryTextBrush"),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        var sortBox = new ComboBox
+        {
+            Width = 190,
+            Height = 38,
+            Padding = new Thickness(8, 5, 8, 5),
+            Background = (Brush)FindResource("SurfaceBrush"),
+            Foreground = (Brush)FindResource("PrimaryTextBrush"),
+            ItemsSource = AppLibrarySortModes.All,
+            SelectedItem = _preferences.LibrarySortOrder,
+            ToolTip = "Choose how apps are ordered"
+        };
+        toolbar.Children.Add(search);
+        toolbar.Children.Add(sortLabel);
+        toolbar.Children.Add(sortBox);
+        root.Children.Add(toolbar);
 
-        void Show(string category)
+        var filters = new WrapPanel { Margin = new Thickness(0, 0, 0, 16) };
+        var grid = new WrapPanel();
+        var noResults = new TextBlock
+        {
+            Text = "No matching apps. Change the filter or search for another app.",
+            FontSize = 12,
+            Foreground = (Brush)FindResource("SecondaryTextBrush"),
+            Visibility = Visibility.Collapsed,
+            Margin = new Thickness(0, 8, 0, 0)
+        };
+
+        var filterLabels = new List<string>
+        {
+            "All apps",
+            "Favorites",
+            "Pinned",
+            "Recently launched"
+        };
+        filterLabels.AddRange(catalogue
+            .Select(app => app.Category)
+            .Where(category => !string.IsNullOrWhiteSpace(category))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(category => category, StringComparer.OrdinalIgnoreCase)
+            .Where(category => !filterLabels.Contains(category, StringComparer.OrdinalIgnoreCase)));
+
+        var activeFilter = "All apps";
+
+        void RenderApps()
         {
             grid.Children.Clear();
-            IEnumerable<AppEntry> items = catalogue;
-            if (category == "Favorites")
-                items = catalogue.Where(IsFavorite);
-            else if (category == "Pinned")
-                items = catalogue.Where(IsPinned);
-            else if (category == "Recently launched")
-                items = catalogue.Where(app => RecentIndex(app.PackageName) != int.MaxValue)
-                    .OrderBy(app => RecentIndex(app.PackageName));
-            else if (category != "All apps")
-                items = catalogue.Where(app => app.Category == category);
+            var query = search.Text.Trim();
 
-            foreach (var app in items)
+            IEnumerable<AppEntry> filtered = catalogue;
+            if (activeFilter == "Favorites")
+                filtered = filtered.Where(IsFavorite);
+            else if (activeFilter == "Pinned")
+                filtered = filtered.Where(IsPinned);
+            else if (activeFilter == "Recently launched")
+                filtered = filtered.Where(app => RecentIndex(app.PackageName) != int.MaxValue);
+            else if (activeFilter != "All apps")
+                filtered = filtered.Where(app => string.Equals(
+                    app.Category, activeFilter, StringComparison.OrdinalIgnoreCase));
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                filtered = filtered.Where(app =>
+                    app.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                    app.Category.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                    (app.PackageName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            var visibleApps = filtered.ToArray();
+            foreach (var app in SortApps(visibleApps))
                 grid.Children.Add(CreateAppCard(app));
+
+            noResults.Visibility = visibleApps.Length == 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
-        var filterLabels = hasLiveApps
-            ? new[] { "All apps", "Favorites", "Pinned", "Recently launched" }
-            : new[] { "All apps", "Games", "Entertainment", "Productivity", "System" };
         foreach (var label in filterLabels)
         {
             var filter = CreateFilterButton(label);
-            filter.Click += (_, _) => Show(label);
+            filter.Click += (_, _) =>
+            {
+                activeFilter = label;
+                RenderApps();
+            };
             filters.Children.Add(filter);
         }
 
+        search.TextChanged += (_, _) => RenderApps();
+        sortBox.SelectionChanged += (_, _) =>
+        {
+            var selected = sortBox.SelectedItem as string;
+            if (string.IsNullOrWhiteSpace(selected))
+                return;
+
+            _preferences.LibrarySortOrder = AppLibrarySortModes.Normalize(selected);
+            SavePreferences();
+            RenderApps();
+        };
+
         root.Children.Add(filters);
         root.Children.Add(grid);
-        Show("All apps");
+        root.Children.Add(noResults);
+        RenderApps();
+
         root.Children.Add(CreateNotice(
-            hasLiveApps ? "Verified package data" : "Preview data only",
+            hasLiveApps ? "Live package data" : "Preview data only",
             hasLiveApps
                 ? _launchabilityDetectionAvailable
-                    ? $"{liveApps.Count} apps have a verified Android MAIN/LAUNCHER activity."
-                    : $"{liveApps.Count} package entries are shown because launcher-activity discovery is unavailable."
+                    ? $"{liveApps.Count} apps have a verified Android MAIN/LAUNCHER activity. Sort order and favorites are saved locally."
+                    : $"{liveApps.Count} package entries are shown because launcher-activity discovery is unavailable. Sort order and favorites are saved locally."
                 : "Connect to a discovered BlueStacks ADB endpoint from Settings to replace these sample cards with real package data."));
         return root;
     }
@@ -635,13 +719,14 @@ public partial class MainWindow : Window
     {
         HomeAppGrid.Children.Clear();
         var hasLiveApps = _connectedDeviceSerial is not null;
-        var apps = hasLiveApps ? GetLiveApps().Take(6).ToArray() : SampleApps.Take(3).ToArray();
+        var catalogue = hasLiveApps ? GetLiveApps() : SampleApps;
+        var apps = SortApps(catalogue).Take(hasLiveApps ? 6 : 3).ToArray();
 
         HomeAppsLabel.Text = hasLiveApps
             ? $"{_launchablePackages.Count} LAUNCHABLE APPS"
             : "SAMPLE APPS";
 
-        foreach (var app in apps.OrderByDescending(IsPinned).ThenBy(app => RecentIndex(app.PackageName)))
+        foreach (var app in apps)
             HomeAppGrid.Children.Add(CreateAppCard(app));
 
         HomeAppNotice.Text = hasLiveApps
@@ -657,17 +742,33 @@ public partial class MainWindow : Window
     private IReadOnlyList<AppEntry> GetLiveApps() =>
         _launchablePackages.Select(packageName =>
         {
-            if (KnownPackages.TryGetValue(packageName, out var known))
-                return new AppEntry(known.Name, known.Category, known.Description, IsVerified: true, PackageName: packageName);
-
-            var shortName = packageName.Split('.').LastOrDefault();
+            var metadata = AppMetadataCatalog.Resolve(packageName);
             return new AppEntry(
-                string.IsNullOrWhiteSpace(shortName) ? packageName : shortName,
-                "Other",
-                packageName,
+                metadata.Name,
+                metadata.Category,
+                metadata.Description,
                 IsVerified: true,
                 PackageName: packageName);
         }).ToArray();
+
+    private IReadOnlyList<AppEntry> SortApps(IEnumerable<AppEntry> apps)
+    {
+        var entries = apps.ToArray();
+        var sortItems = entries.Select(app => new AppLibrarySortItem(
+            AppLibraryKey(app),
+            app.Name,
+            app.Category,
+            IsFavorite(app),
+            IsPinned(app)));
+
+        var byKey = entries.ToDictionary(AppLibraryKey, StringComparer.OrdinalIgnoreCase);
+        return AppLibrarySorter.Sort(sortItems, _preferences.LibrarySortOrder, _preferences.RecentPackages)
+            .Select(key => byKey[key])
+            .ToArray();
+    }
+
+    private static string AppLibraryKey(AppEntry app) =>
+        string.IsNullOrWhiteSpace(app.PackageName) ? $"preview:{app.Name}" : app.PackageName;
 
     private void UpdateFeaturedMinecraftState()
     {
@@ -1277,13 +1378,25 @@ public partial class MainWindow : Window
 
     private async Task LoadWebsiteLogoAsync(string packageName, Image image, TextBlock fallback)
     {
-        var logo = await _websiteLogoService.GetLogoAsync(packageName);
-        if (logo is null)
-            return;
+        try
+        {
+            var logo = await _websiteLogoService.GetLogoAsync(packageName);
+            if (logo is null || !image.IsLoaded)
+                return;
 
-        image.Source = logo;
-        image.Visibility = Visibility.Visible;
-        fallback.Visibility = Visibility.Collapsed;
+            image.Source = logo;
+            image.Visibility = Visibility.Visible;
+            fallback.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception exception) when (
+            exception is System.IO.IOException or
+            System.IO.FileFormatException or
+            InvalidOperationException or
+            ArgumentException or
+            TaskCanceledException)
+        {
+            // The initials fallback remains visible when a publisher icon cannot be loaded.
+        }
     }
 
     private Button CreateFilterButton(string label) => new()
@@ -1406,6 +1519,18 @@ public partial class MainWindow : Window
             DynamicPageContent.Content = BuildPage(PageTitle.Text);
     }
 
+    private void UpdateLibraryFeedback(string message, bool failed)
+    {
+        _libraryFeedbackMessage = message;
+        _libraryFeedbackFailed = failed;
+        if (PageTitle.Text == "Library" &&
+            DynamicPageContent.Visibility == Visibility.Visible &&
+            PlayPage.Visibility != Visibility.Visible)
+        {
+            DynamicPageContent.Content = BuildLibraryPage();
+        }
+    }
+
     private async void LaunchVerifiedPackage_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: string packageName })
@@ -1418,6 +1543,7 @@ public partial class MainWindow : Window
         {
             _adbError = "The selected package is no longer in the verified installed-package list. Refresh the library.";
             RuntimeStatusText.Text = "Package not verified";
+            UpdateLibraryFeedback(_adbError, failed: true);
             return;
         }
 
@@ -1426,6 +1552,7 @@ public partial class MainWindow : Window
         {
             _adbError = "Connect to a verified BlueStacks ADB device before launching an app.";
             RuntimeStatusText.Text = "ADB device not connected";
+            UpdateLibraryFeedback(_adbError, failed: true);
             return;
         }
 
@@ -1436,6 +1563,7 @@ public partial class MainWindow : Window
         {
             _adbError = $"Launch request timed out for {packageName}.";
             RuntimeStatusText.Text = "Launch timed out";
+            UpdateLibraryFeedback(_adbError, failed: true);
         }
         else if (result.ExitCode == 0 &&
                  !result.StandardOutput.Contains("No activities found", StringComparison.OrdinalIgnoreCase) &&
@@ -1450,6 +1578,7 @@ public partial class MainWindow : Window
             UpdateHomeAppTiles();
             _adbError = null;
             RuntimeStatusText.Text = $"ADB launch request accepted · {packageName}";
+            UpdateLibraryFeedback($"BlueStacks accepted the launch request for {packageName}. Window embedding is checked separately.", failed: false);
             await ShowEmbeddedPlayerAsync(packageName);
         }
         else
@@ -1460,6 +1589,7 @@ public partial class MainWindow : Window
             if (string.IsNullOrWhiteSpace(_adbError))
                 _adbError = $"BlueStacks did not accept the launch request for {packageName}.";
             RuntimeStatusText.Text = "Launch request failed";
+            UpdateLibraryFeedback(_adbError, failed: true);
         }
     }
 

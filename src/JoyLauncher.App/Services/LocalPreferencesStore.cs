@@ -14,10 +14,17 @@ public sealed class LocalPreferencesStore
         PropertyNameCaseInsensitive = true
     };
 
-    private readonly string _settingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "JoyLauncher",
-        "settings.json");
+    private readonly string _settingsPath;
+
+    public LocalPreferencesStore(string? settingsPath = null)
+    {
+        _settingsPath = string.IsNullOrWhiteSpace(settingsPath)
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "JoyLauncher",
+                "settings.json")
+            : Path.GetFullPath(settingsPath);
+    }
 
     public LocalPreferences Load()
     {
@@ -60,9 +67,11 @@ public sealed class LocalPreferences
     public List<string> FavoritePackages { get; set; } = [];
     public List<string> PinnedPackages { get; set; } = [];
     public List<string> RecentPackages { get; set; } = [];
+    public string LibrarySortOrder { get; set; } = AppLibrarySortModes.Name;
 
     internal void Normalize()
     {
+        LibrarySortOrder = AppLibrarySortModes.Normalize(LibrarySortOrder);
         FavoritePackages = NormalizeList(FavoritePackages);
         PinnedPackages = NormalizeList(PinnedPackages);
         RecentPackages = NormalizeList(RecentPackages).Take(30).ToList();

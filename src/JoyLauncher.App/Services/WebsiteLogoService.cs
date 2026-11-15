@@ -34,19 +34,42 @@ public sealed class WebsiteLogoService
             ["com.google.android.gm"] = "https://mail.google.com/",
             ["com.google.android.apps.maps"] = "https://maps.google.com/",
             ["com.google.android.apps.photos"] = "https://photos.google.com/",
+            ["com.google.android.apps.docs"] = "https://drive.google.com/",
+            ["com.google.android.calendar"] = "https://calendar.google.com/",
+            ["com.google.android.keep"] = "https://keep.google.com/",
+            ["com.google.android.apps.messaging"] = "https://messages.google.com/",
+            ["com.google.android.apps.tachyon"] = "https://meet.google.com/",
+            ["com.whatsapp"] = "https://www.whatsapp.com/",
+            ["com.discord"] = "https://discord.com/",
+            ["com.spotify.music"] = "https://www.spotify.com/",
+            ["com.netflix.mediaclient"] = "https://www.netflix.com/",
+            ["com.roblox.client"] = "https://www.roblox.com/",
+            ["com.supercell.clashofclans"] = "https://supercell.com/",
+            ["com.supercell.clashroyale"] = "https://supercell.com/",
             ["com.android.vending"] = "https://play.google.com/",
             ["com.google.android.googlequicksearchbox"] = "https://www.google.com/"
         };
 
-    public Task<BitmapImage?> GetLogoAsync(string? packageName)
+    public async Task<BitmapImage?> GetLogoAsync(string? packageName)
     {
         if (string.IsNullOrWhiteSpace(packageName) ||
             !PublisherDomains.ContainsKey(packageName))
         {
-            return Task.FromResult<BitmapImage?>(null);
+            return null;
         }
 
-        return Cache.GetOrAdd(packageName, LoadLogoAsync);
+        var pending = Cache.GetOrAdd(packageName, LoadLogoAsync);
+        var logo = await pending;
+
+        // Only successful results stay cached. A temporary network outage can be retried.
+        if (logo is null &&
+            Cache.TryGetValue(packageName, out var cached) &&
+            ReferenceEquals(cached, pending))
+        {
+            Cache.TryRemove(packageName, out _);
+        }
+
+        return logo;
     }
 
     private static async Task<BitmapImage?> LoadLogoAsync(string packageName)
@@ -58,8 +81,11 @@ public sealed class WebsiteLogoService
                 $"https://www.google.com/s2/favicons?domain_url={Uri.EscapeDataString(domain)}&sz=128");
 
             using var response = await Client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead);
-            if (!response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode ||
+                response.Content.Headers.ContentLength is > 512_000)
+            {
                 return null;
+            }
 
             var bytes = await response.Content.ReadAsByteArrayAsync();
             if (bytes.Length == 0 || bytes.Length > 512_000)
@@ -79,6 +105,9 @@ public sealed class WebsiteLogoService
             exception is HttpRequestException or
             TaskCanceledException or
             IOException or
+            FileFormatException or
+            ArgumentException or
+            InvalidOperationException or
             NotSupportedException or
             InvalidDataException)
         {
