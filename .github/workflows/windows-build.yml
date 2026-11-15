@@ -25,7 +25,7 @@ jobs:
         run: dotnet build JoyLauncher.sln --configuration Release
 
       - name: Run automated tests
-        run: dotnet test JoyLauncher.sln --configuration Release --no-build
+        run: dotnet test JoyLauncher.sln --configuration Release --no-build --logger "console;verbosity=normal"
 
       - name: Publish self-contained Windows x64 app
         run: dotnet publish src/JoyLauncher.App/JoyLauncher.App.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/JoyLauncher
