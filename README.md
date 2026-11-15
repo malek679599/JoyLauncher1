@@ -14,6 +14,7 @@ A Windows desktop launcher for BlueStacks 5, inspired by the clarity and control
 - XInput-compatible controllers support D-pad / left-stick navigation, A to select, B to return, and Start to toggle fullscreen while browsing the launcher.
 - F11 toggles fullscreen; Alt+1 through Alt+7 switch the main sections; Escape returns to Home and then exits fullscreen.
 - Keep preferences local and diagnostics clear.
+- Save unhandled exception reports locally under `%LOCALAPPDATA%\\JoyLauncher\\Logs`; never upload crash logs automatically.
 - Avoid paid APIs, subscriptions, proprietary paid assets, and unnecessary background services.
 
 ## Runtime model

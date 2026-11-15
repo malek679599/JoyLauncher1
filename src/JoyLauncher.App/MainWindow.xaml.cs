@@ -14,6 +14,11 @@ namespace JoyLauncher.App;
 
 public partial class MainWindow : Window
 {
+    private static readonly string CrashLogWriterDirectory = System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "JoyLauncher",
+        "Logs");
+
     private readonly BlueStacksDiscoveryService _blueStacksDiscovery = new();
     private readonly AdbClient _adbClient = new();
     private readonly WebsiteLogoService _websiteLogoService = new();
@@ -581,7 +586,8 @@ public partial class MainWindow : Window
             BlueStacksWindowHost.GetChildWindowInventory(),
             $"Big Picture mode active: {_isBigPictureMode}",
             $"Play page visible: {PlayPage.Visibility == Visibility.Visible}",
-            $"Latest runtime error: {_adbError ?? "None"}"
+            $"Latest runtime error: {_adbError ?? "None"}",
+            $"Local crash-log folder: {CrashLogWriterDirectory}"
         ]);
 
         try
