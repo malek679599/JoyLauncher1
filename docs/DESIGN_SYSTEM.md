@@ -59,6 +59,16 @@ Every interactive control needs default, hover, focused, pressed, disabled, and 
 - Respect a reduced-motion setting.
 - Motion must never delay navigation or app launching.
 
+## Big Picture / Gaming Mode composition
+
+- Full-screen, controller-first layout with a cinematic, app-aware backdrop.
+- Right-aligned utility controls for search, settings, ADB connection state, local clock, and profile mark.
+- One wide featured app card followed by a horizontal rail of vertical poster cards.
+- Backdrop palette and hero identity update when a card receives pointer hover or keyboard/controller focus.
+- Centered What's New, Friends, and Recommended tabs; unavailable social data is labelled instead of simulated.
+- Footer shows MENU, OPTIONS, A SELECT, and B BACK prompts.
+- Cover artwork is generated from original gradients, geometry, and publisher favicon assets; the app does not claim Steam Deck Verified status.
+
 ## Home screen composition
 
 - Left: persistent navigation rail.
@@ -67,6 +77,10 @@ Every interactive control needs default, hover, focused, pressed, disabled, and 
 - Below hero: Continue / Recent and Pinned apps rails.
 - Lower content: Games and Entertainment collections.
 - Use original abstract artwork until licensed/user-provided artwork is available.
+
+## Operating-mode boundary
+
+Big Picture Mode is a full-screen Windows WPF shell that launches Android apps through BlueStacks 5 and ADB. It is not SteamOS, Gamescope, KDE Plasma, Proton, a Linux boot environment, or an OS-level suspend/resume implementation. Windows remains the host operating system and BlueStacks remains the Android runtime.
 
 ## Responsive behavior
 

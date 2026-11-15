@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using JoyLauncher.App.Services;
 
 namespace JoyLauncher.App;
@@ -31,6 +32,8 @@ public partial class MainWindow : Window
     private bool _isBigPictureMode;
     private bool _wasBigPictureBeforePlay;
     private bool _bigPictureOwnedFullscreen;
+    private DispatcherTimer? _clockTimer;
+    private string _bigPictureActiveTab = "WHAT'S NEW";
     private WindowStyle _previousWindowStyle;
     private ResizeMode _previousResizeMode;
 
@@ -72,6 +75,10 @@ public partial class MainWindow : Window
         StateChanged += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
         Activated += (_, _) => BlueStacksWindowHost.RefreshDockedPosition();
         RuntimeStatusText.Text = "Waiting for detection";
+        BigPictureClock.Text = DateTime.Now.ToString("h:mm tt");
+        _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+        _clockTimer.Tick += (_, _) => BigPictureClock.Text = DateTime.Now.ToString("h:mm tt");
+        _clockTimer.Start();
         UpdateHomeAppTiles();
         _gamepadService.ButtonPressed += Gamepad_ButtonPressed;
         _gamepadService.ConnectionChanged += Gamepad_ConnectionChanged;
@@ -81,6 +88,7 @@ public partial class MainWindow : Window
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         BlueStacksWindowHost.Detach();
+        _clockTimer?.Stop();
         _gamepadService.Dispose();
     }
 
@@ -667,10 +675,6 @@ public partial class MainWindow : Window
             ? "Connect ADB and install Minecraft in this BlueStacks instance to enable this action."
             : $"Launch verified package {minecraftPackage}";
         LaunchFeaturedButton.Opacity = minecraftPackage is null ? 0.62 : 1.0;
-        BigPictureMinecraftButton.Tag = minecraftPackage;
-        BigPictureMinecraftButton.IsEnabled = minecraftPackage is not null;
-        BigPictureMinecraftButton.Content = minecraftPackage is null ? "Minecraft not detected" : "▶   Play Minecraft";
-        BigPictureMinecraftButton.Opacity = minecraftPackage is null ? 0.55 : 1.0;
     }
 
     private Border CreateAppCard(AppEntry app)
@@ -790,111 +794,437 @@ public partial class MainWindow : Window
 
     private void RefreshBigPictureContent()
     {
-        BigPictureAppGrid.Children.Clear();
-        var hasLiveApps = _connectedDeviceSerial is not null;
-        var apps = hasLiveApps ? GetLiveApps() : SampleApps;
+        BigPictureRecentGamesPanel.Children.Clear();
 
-        foreach (var app in apps
-                     .OrderByDescending(IsPinned)
-                     .ThenByDescending(IsFavorite)
-                     .ThenBy(app => RecentIndex(app.PackageName))
-                     .ThenBy(app => app.Name, StringComparer.OrdinalIgnoreCase))
+        var hasLiveApps = _connectedDeviceSerial is not null;
+        var apps = (hasLiveApps ? GetLiveApps() : SampleApps).ToList();
+        var ordered = apps
+            .OrderByDescending(IsPinned)
+            .ThenByDescending(IsFavorite)
+            .ThenBy(app => RecentIndex(app.PackageName))
+            .ThenBy(app => app.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (_bigPictureActiveTab == "RECOMMENDED")
         {
-            BigPictureAppGrid.Children.Add(CreateBigPictureAppCard(app));
+            var selected = ordered.Where(app => IsPinned(app) || IsFavorite(app)).ToList();
+            if (selected.Count > 0)
+                ordered = selected;
         }
+
+        var featured = apps.FirstOrDefault(app =>
+                            string.Equals(app.PackageName, "com.mojang.minecraftpe", StringComparison.OrdinalIgnoreCase))
+                        ?? ordered.FirstOrDefault();
+
+        if (featured is not null)
+            SetBigPictureFeaturedApp(featured);
+        else
+            SetBigPictureEmptyHero(hasLiveApps);
+
+        BigPictureNetworkDot.Fill = hasLiveApps
+            ? new SolidColorBrush(Color.FromRgb(84, 212, 151))
+            : new SolidColorBrush(Color.FromRgb(231, 180, 93));
+        BigPictureNetworkText.Text = hasLiveApps ? "ADB CONNECTED" : "ADB OFFLINE";
 
         BigPictureAppsCount.Text = hasLiveApps
             ? $"{apps.Count} LIVE APPS  ·  {_connectedDeviceSerial}"
             : $"{apps.Count} PREVIEW TILES  ·  CONNECT ADB TO LOAD YOUR LIBRARY";
 
         BigPictureStatusText.Text = hasLiveApps
-            ? $"{_launchablePackages.Count} launchable apps are ready from your connected BlueStacks instance."
-            : "Preview tiles only. Connect to your BlueStacks ADB instance to load and launch your installed apps.";
+            ? $"{_launchablePackages.Count} launchable Android apps detected in this BlueStacks instance."
+            : "Preview entries only. Connect BlueStacks ADB to load your installed apps.";
 
-        var minecraftPackage = _launchablePackages.FirstOrDefault(packageName =>
-            string.Equals(packageName, "com.mojang.minecraftpe", StringComparison.OrdinalIgnoreCase));
-        BigPictureMinecraftButton.Tag = minecraftPackage;
-        BigPictureMinecraftButton.IsEnabled = minecraftPackage is not null;
-        BigPictureMinecraftButton.Content = minecraftPackage is null
-            ? "Minecraft not detected"
-            : "▶   Play Minecraft";
-        BigPictureMinecraftButton.Opacity = minecraftPackage is null ? 0.55 : 1.0;
+        if (_bigPictureActiveTab == "FRIENDS")
+        {
+            BigPictureRecentGamesPanel.Children.Add(new TextBlock
+            {
+                Text = "Friends activity is not connected yet. Your local app library remains available in What's New.",
+                FontSize = 13,
+                Foreground = new SolidColorBrush(Color.FromRgb(184, 195, 198)),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(8, 28, 0, 0)
+            });
+            BigPictureTabStatus.Text = "SOCIAL FEED NOT CONNECTED";
+            return;
+        }
+
+        BigPictureTabStatus.Text = _bigPictureActiveTab == "RECOMMENDED"
+            ? "PINNED & FAVORITE APPS"
+            : "YOUR LOCAL LIBRARY";
+
+        if (featured is not null)
+            BigPictureRecentGamesPanel.Children.Add(CreateBigPictureFeaturedCard(featured));
+
+        foreach (var app in ordered.Where(app => !ReferenceEquals(app, featured)))
+            BigPictureRecentGamesPanel.Children.Add(CreateBigPicturePosterCard(app));
+
+        if (BigPictureRecentGamesPanel.Children.Count == 0)
+        {
+            BigPictureRecentGamesPanel.Children.Add(new TextBlock
+            {
+                Text = "No launchable apps were found. Connect BlueStacks ADB or install an Android app.",
+                FontSize = 13,
+                Foreground = new SolidColorBrush(Color.FromRgb(184, 195, 198)),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(8, 28, 0, 0)
+            });
+        }
     }
 
-    private Button CreateBigPictureAppCard(AppEntry app)
+    private void SetBigPictureFeaturedApp(AppEntry app)
     {
+        var palette = GetBigPicturePalette(app);
+
+        BigPictureHeroBackdrop.Background = new LinearGradientBrush(palette.Start, palette.End, 0);
+        BigPictureHeroArtworkSurface.Background = new LinearGradientBrush(palette.End, palette.Accent, 35);
+        BigPictureHeroEyebrow.Text = $"{app.Category.ToUpperInvariant()}  ·  {(app.IsVerified ? "INSTALLED" : "PREVIEW")}";
+        BigPictureHeroTitle.Text = app.Name.ToUpperInvariant();
+        BigPictureHeroDescription.Text = app.IsVerified
+            ? $"{app.Description}  Ready to launch from your connected BlueStacks instance."
+            : $"{app.Description}  Preview artwork only — connect BlueStacks ADB to enable launching.";
+        BigPictureHeroFallback.Text = GetAppInitial(app.Name);
+        BigPictureHeroLogo.Source = null;
+        BigPictureHeroLogo.Visibility = Visibility.Collapsed;
+        BigPictureHeroFallback.Visibility = Visibility.Visible;
+
+        BigPictureLaunchButton.Tag = app.PackageName;
+        BigPictureLaunchButton.IsEnabled = app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName);
+        BigPictureLaunchButton.Content = BigPictureLaunchButton.IsEnabled
+            ? $"▶   PLAY {app.Name.ToUpperInvariant()}"
+            : "CONNECT TO PLAY";
+        BigPictureLaunchButton.ToolTip = BigPictureLaunchButton.IsEnabled
+            ? $"Launch {app.Name} in BlueStacks"
+            : "Connect BlueStacks ADB and verify this app before launching.";
+        BigPictureLaunchButton.Opacity = BigPictureLaunchButton.IsEnabled ? 1 : 0.58;
+
+        if (app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName))
+            _ = LoadWebsiteLogoAsync(app.PackageName, BigPictureHeroLogo, BigPictureHeroFallback);
+    }
+
+    private void SetBigPictureEmptyHero(bool hasLiveApps)
+    {
+        BigPictureHeroEyebrow.Text = "JOYLAUNCHER  ·  ANDROID LIBRARY";
+        BigPictureHeroTitle.Text = "READY WHEN YOU ARE";
+        BigPictureHeroDescription.Text = "Connect BlueStacks to discover and launch your installed Android apps.";
+        BigPictureHeroFallback.Text = "J";
+        BigPictureHeroLogo.Source = null;
+        BigPictureHeroLogo.Visibility = Visibility.Collapsed;
+        BigPictureHeroFallback.Visibility = Visibility.Visible;
+        BigPictureLaunchButton.Tag = null;
+        BigPictureLaunchButton.IsEnabled = false;
+        BigPictureLaunchButton.Content = "NO APP SELECTED";
+        BigPictureStatusText.Text = hasLiveApps
+            ? "No launchable apps were returned by Android."
+            : "Connect BlueStacks ADB to load your installed apps.";
+        BigPictureHeroBackdrop.Background = new LinearGradientBrush(
+            Color.FromRgb(25, 52, 60), Color.FromRgb(22, 25, 32), 0);
+        BigPictureHeroArtworkSurface.Background = new SolidColorBrush(Color.FromRgb(34, 67, 68));
+    }
+
+    private Button CreateBigPictureFeaturedCard(AppEntry app)
+    {
+        var palette = GetBigPicturePalette(app);
+        var logoImage = new Image { Width = 72, Height = 72, Stretch = Stretch.Uniform, Visibility = Visibility.Collapsed };
         var fallback = new TextBlock
         {
-            Text = string.IsNullOrWhiteSpace(app.Name) ? "?" : app.Name[..1].ToUpperInvariant(),
-            FontSize = 28,
-            FontWeight = FontWeights.Bold,
-            Foreground = (Brush)FindResource("AccentBrush"),
+            Text = GetAppInitial(app.Name),
+            FontSize = 66,
+            FontWeight = FontWeights.ExtraBold,
+            Foreground = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
-        var logoImage = new Image
-        {
-            Width = 62,
-            Height = 62,
-            Stretch = Stretch.Uniform,
-            Visibility = Visibility.Collapsed
-        };
-        var logoSurface = new Grid
-        {
-            Width = 72,
-            Height = 72,
-            Children = { fallback, logoImage }
-        };
 
-        var content = new StackPanel();
-        content.Children.Add(new Border
+        var artwork = new Grid
         {
-            Width = 82,
-            Height = 82,
-            CornerRadius = new CornerRadius(16),
-            Background = (Brush)FindResource("ElevatedBrush"),
-            Padding = new Thickness(5),
-            Margin = new Thickness(0, 0, 0, 18),
-            Child = logoSurface
+            Background = new LinearGradientBrush(palette.Start, palette.End, 0),
+            ClipToBounds = true
+        };
+        artwork.Children.Add(new Ellipse
+        {
+            Width = 205,
+            Height = 205,
+            Fill = new SolidColorBrush(palette.Accent),
+            Opacity = 0.24,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -48, -24, 0)
         });
-        content.Children.Add(new TextBlock
+        artwork.Children.Add(new Ellipse
         {
-            Text = app.Name,
-            FontSize = 22,
-            FontWeight = FontWeights.Bold,
+            Width = 145,
+            Height = 145,
+            Stroke = new SolidColorBrush(Color.FromArgb(115, 255, 255, 255)),
+            StrokeThickness = 1,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -18, 8, 0)
+        });
+        artwork.Children.Add(fallback);
+        artwork.Children.Add(logoImage);
+
+        var fade = new Border
+        {
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Height = 118,
+            Background = new LinearGradientBrush(
+                Color.FromArgb(0, 8, 12, 17), Color.FromArgb(235, 8, 12, 17), 90)
+        };
+        artwork.Children.Add(fade);
+
+        var titleStack = new StackPanel
+        {
+            VerticalAlignment = VerticalAlignment.Bottom,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(17, 0, 110, 14)
+        };
+        titleStack.Children.Add(new TextBlock
+        {
+            Text = app.Name.ToUpperInvariant(),
+            FontSize = 21,
+            FontWeight = FontWeights.ExtraBold,
             Foreground = Brushes.White,
             TextTrimming = TextTrimming.CharacterEllipsis
         });
-        content.Children.Add(new TextBlock
+        titleStack.Children.Add(new TextBlock
         {
-            Text = app.Category.ToUpperInvariant() + (app.IsVerified ? "  ·  READY" : "  ·  PREVIEW"),
-            FontSize = 11,
-            FontWeight = FontWeights.SemiBold,
-            Foreground = (Brush)FindResource("SecondaryTextBrush"),
-            Margin = new Thickness(0, 7, 0, 0)
+            Text = app.Category.ToUpperInvariant(),
+            FontSize = 9,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(Color.FromRgb(184, 226, 208)),
+            Margin = new Thickness(0, 3, 0, 0)
         });
+        artwork.Children.Add(titleStack);
+
+        var badge = new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            CornerRadius = new CornerRadius(10),
+            Background = new SolidColorBrush(Color.FromArgb(225, 19, 35, 31)),
+            Padding = new Thickness(8, 5, 8, 5),
+            Margin = new Thickness(0, 0, 12, 13),
+            Child = new TextBlock
+            {
+                Text = app.IsVerified ? "✓  READY" : "PREVIEW",
+                Foreground = app.IsVerified
+                    ? new SolidColorBrush(Color.FromRgb(126, 232, 176))
+                    : new SolidColorBrush(Color.FromRgb(216, 219, 222)),
+                FontSize = 9,
+                FontWeight = FontWeights.Bold
+            }
+        };
+        artwork.Children.Add(badge);
 
         var button = new Button
         {
-            Content = content,
-            Tag = app.PackageName,
-            Width = 258,
-            Height = 214,
-            Margin = new Thickness(0, 0, 16, 16),
-            Padding = new Thickness(22),
-            Background = (Brush)FindResource("SurfaceBrush"),
-            Foreground = Brushes.White,
-            HorizontalContentAlignment = HorizontalAlignment.Left,
-            VerticalContentAlignment = VerticalAlignment.Stretch,
-            IsEnabled = app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName),
-            ToolTip = app.IsVerified ? $"Launch {app.Name}" : "Preview only · connect ADB to enable launching"
+            Width = 408,
+            Height = 207,
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 0, 13, 5),
+            Background = Brushes.Transparent,
+            BorderBrush = new SolidColorBrush(Color.FromRgb(132, 231, 190)),
+            BorderThickness = new Thickness(1.5),
+            Content = new Border
+            {
+                CornerRadius = new CornerRadius(10),
+                ClipToBounds = true,
+                Child = artwork
+            },
+            Tag = app,
+            ToolTip = $"Focus {app.Name}; select to launch when connected"
         };
-        button.Click += LaunchVerifiedPackage_Click;
+        button.Click += BigPictureAppCard_Click;
+        button.MouseEnter += (_, _) => SetBigPictureFeaturedApp(app);
+        button.GotKeyboardFocus += (_, _) => SetBigPictureFeaturedApp(app);
 
         if (app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName))
             _ = LoadWebsiteLogoAsync(app.PackageName, logoImage, fallback);
 
         return button;
+    }
+
+    private Button CreateBigPicturePosterCard(AppEntry app)
+    {
+        var palette = GetBigPicturePalette(app);
+        var logoImage = new Image { Width = 55, Height = 55, Stretch = Stretch.Uniform, Visibility = Visibility.Collapsed };
+        var fallback = new TextBlock
+        {
+            Text = GetAppInitial(app.Name),
+            FontSize = 53,
+            FontWeight = FontWeights.ExtraBold,
+            Foreground = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var art = new Grid
+        {
+            Background = new LinearGradientBrush(palette.Start, palette.End, 35),
+            ClipToBounds = true
+        };
+        art.Children.Add(new Ellipse
+        {
+            Width = 160,
+            Height = 160,
+            Fill = new SolidColorBrush(palette.Accent),
+            Opacity = 0.28,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -36, -46, 0)
+        });
+        art.Children.Add(fallback);
+        art.Children.Add(logoImage);
+        art.Children.Add(new Border
+        {
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Height = 90,
+            Background = new LinearGradientBrush(
+                Color.FromArgb(0, 7, 11, 16), Color.FromArgb(245, 7, 11, 16), 90)
+        });
+
+        var labels = new StackPanel
+        {
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(10, 0, 8, 12)
+        };
+        labels.Children.Add(new TextBlock
+        {
+            Text = app.Name,
+            FontSize = 12,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxHeight = 34
+        });
+        labels.Children.Add(new TextBlock
+        {
+            Text = app.Category.ToUpperInvariant(),
+            FontSize = 8,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(Color.FromRgb(182, 202, 197)),
+            Margin = new Thickness(0, 4, 0, 0)
+        });
+        art.Children.Add(labels);
+
+        if (app.IsVerified)
+        {
+            art.Children.Add(new Border
+            {
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                CornerRadius = new CornerRadius(8),
+                Background = new SolidColorBrush(Color.FromArgb(225, 18, 43, 34)),
+                Padding = new Thickness(6, 3, 6, 3),
+                Margin = new Thickness(7),
+                Child = new TextBlock
+                {
+                    Text = "✓",
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromRgb(126, 232, 176))
+                }
+            });
+        }
+
+        var button = new Button
+        {
+            Width = 137,
+            Height = 207,
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 0, 11, 5),
+            Background = Brushes.Transparent,
+            Content = new Border
+            {
+                CornerRadius = new CornerRadius(9),
+                ClipToBounds = true,
+                Child = art
+            },
+            Tag = app,
+            ToolTip = app.IsVerified ? $"Launch {app.Name}" : $"{app.Name} preview; connect ADB to enable launching"
+        };
+        button.Click += BigPictureAppCard_Click;
+        button.MouseEnter += (_, _) => SetBigPictureFeaturedApp(app);
+        button.GotKeyboardFocus += (_, _) => SetBigPictureFeaturedApp(app);
+
+        if (app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName))
+            _ = LoadWebsiteLogoAsync(app.PackageName, logoImage, fallback);
+
+        return button;
+    }
+
+    private async void BigPictureAppCard_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: AppEntry app })
+            return;
+
+        SetBigPictureFeaturedApp(app);
+        if (app.IsVerified && !string.IsNullOrWhiteSpace(app.PackageName))
+            await LaunchPackageAsync(app.PackageName);
+        else
+            BigPictureStatusText.Text = "Preview only. Connect BlueStacks ADB and install this app to enable launching.";
+    }
+
+    private async void BigPictureLaunch_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string packageName })
+            await LaunchPackageAsync(packageName);
+    }
+
+    private void BigPictureSearch_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBigPictureMode)
+            ExitBigPictureMode();
+        Navigation_Click(new Button { Tag = "Search" }, new RoutedEventArgs());
+    }
+
+    private void BigPictureSettings_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBigPictureMode)
+            ExitBigPictureMode();
+        Navigation_Click(new Button { Tag = "Settings" }, new RoutedEventArgs());
+    }
+
+    private void BigPictureTab_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string tab })
+            return;
+
+        _bigPictureActiveTab = tab;
+        foreach (var button in FindVisualChildren<Button>(BigPictureOverlay)
+                     .Where(candidate => candidate.Tag is string tag &&
+                         tag is "WHAT'S NEW" or "FRIENDS" or "RECOMMENDED"))
+        {
+            var isSelected = string.Equals(button.Tag as string, tab, StringComparison.Ordinal);
+            button.Background = isSelected
+                ? new SolidColorBrush(Color.FromRgb(36, 75, 67))
+                : Brushes.Transparent;
+            button.Foreground = isSelected
+                ? new SolidColorBrush(Color.FromRgb(217, 247, 234))
+                : new SolidColorBrush(Color.FromRgb(170, 181, 192));
+        }
+
+        RefreshBigPictureContent();
+    }
+
+    private static string GetAppInitial(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "?" : name[..1].ToUpperInvariant();
+
+    private static (Color Start, Color End, Color Accent) GetBigPicturePalette(AppEntry app)
+    {
+        var key = (app.Name + " " + app.Category).ToLowerInvariant();
+        if (key.Contains("minecraft"))
+            return (Color.FromRgb(31, 77, 59), Color.FromRgb(13, 31, 37), Color.FromRgb(123, 219, 141));
+        if (key.Contains("youtube"))
+            return (Color.FromRgb(112, 38, 43), Color.FromRgb(29, 24, 34), Color.FromRgb(255, 92, 87));
+        if (key.Contains("chrome") || key.Contains("google"))
+            return (Color.FromRgb(35, 67, 108), Color.FromRgb(20, 27, 45), Color.FromRgb(112, 178, 246));
+        if (key.Contains("music"))
+            return (Color.FromRgb(87, 45, 92), Color.FromRgb(26, 22, 43), Color.FromRgb(202, 129, 225));
+        if (key.Contains("game"))
+            return (Color.FromRgb(31, 75, 88), Color.FromRgb(18, 27, 43), Color.FromRgb(111, 211, 206));
+        return (Color.FromRgb(54, 73, 89), Color.FromRgb(22, 29, 41), Color.FromRgb(150, 188, 205));
     }
 
     private void EnterBigPictureMode()
@@ -911,8 +1241,8 @@ public partial class MainWindow : Window
         BigPictureOverlay.Visibility = Visibility.Visible;
         _isBigPictureMode = true;
 
-        if (BigPictureMinecraftButton.IsEnabled)
-            BigPictureMinecraftButton.Focus();
+        if (BigPictureLaunchButton.IsEnabled)
+            BigPictureLaunchButton.Focus();
         else
             BigPictureExitButton.Focus();
     }
@@ -937,7 +1267,7 @@ public partial class MainWindow : Window
 
     private void ExitBigPicture_Click(object sender, RoutedEventArgs e) => ExitBigPictureMode();
 
-    private async void BigPictureMinecraft_Click(object sender, RoutedEventArgs e)
+    private async void BigPictureLaunch_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: string packageName })
             await LaunchPackageAsync(packageName);
@@ -1238,8 +1568,8 @@ public partial class MainWindow : Window
             StandardShell.Visibility = Visibility.Collapsed;
             BigPictureOverlay.Visibility = Visibility.Visible;
             _isBigPictureMode = true;
-            if (BigPictureMinecraftButton.IsEnabled)
-                BigPictureMinecraftButton.Focus();
+            if (BigPictureLaunchButton.IsEnabled)
+                BigPictureLaunchButton.Focus();
             else
                 BigPictureExitButton.Focus();
             return;
