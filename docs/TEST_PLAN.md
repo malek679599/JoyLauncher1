@@ -11,29 +11,31 @@
 
 | Check | Result | Evidence |
 |---|---|---|
-| Windows Release build | Passed; 0 warnings and 0 errors | GitHub Actions run #112, commit `79a0d78c1131ca0c425e8afd8b3c6963c651dc52` |
-| Automated regression suite | Passed; 24/24 tests | Run #112 |
-| Self-contained Windows x64 publish | Passed | Run #112 |
-| Hosted Windows startup smoke test | Passed; executable remained open for the 8-second check without BlueStacks | Run #112 |
-| Inno Setup compiler integrity | Passed; pinned Inno Setup 7.1.1 installer SHA-256 and Authenticode publisher signature verified | Run #112 |
-| Per-user Windows installer | Passed; installer compiled successfully | Run #112 |
-| Installer lifecycle smoke test | Passed; silent install created the app and uninstaller, then silent uninstall removed the executable | Run #112 |
-| Portable ZIP and release metadata | Passed; versioned ZIP, build info, release notes, and SHA-256 manifest generated | Run #112 |
-| Release package integrity | Passed; every file listed in the release checksum manifest verified | Run #112 |
-| Versioned release artifact | Uploaded as `JoyLauncher-Release-Windows-x64`; artifact ID `14184182081`, expires 15 December 2026 | [Run #112](https://github.com/malek679599/JoyLauncher1/actions/runs/43770228044) |
-| Library sorting | Passed; name, category, recent, favorites-first, pinned-first, and invalid-mode fallback | `AppLibrarySorterTests.cs`, run #112 |
-| App metadata resolution | Passed; known package mapping and unknown-package humanization | `AppMetadataCatalogTests.cs`, run #112 |
-| Sort preference persistence | Passed; roundtrip, old settings without a sort field, and invalid sort normalization | `LocalPreferencesStoreTests.cs`, run #112 |
+| Windows Release build | Passed; 0 warnings and 0 errors | GitHub Actions run #113, commit `966b311e20f64a522abc45961e63836fafa6c8f2` |
+| Automated regression suite | Passed; 24/24 tests | Run #113 |
+| Self-contained Windows x64 publish | Passed | Run #113 |
+| Hosted Windows startup smoke test | Passed; executable remained open for the 8-second check without BlueStacks | Run #113 |
+| Inno Setup compiler integrity | Passed; pinned installer SHA-256 and Authenticode publisher signature verified | Run #113 |
+| Per-user Windows installer | Passed; installer compiled successfully | Run #113 |
+| Installer lifecycle smoke test | Passed; silent install created the app and uninstaller, then silent uninstall removed the executable | Run #113 |
+| Portable ZIP and release metadata | Passed; versioned ZIP, build info, release notes, and SHA-256 manifest generated | Run #113 |
+| Release package integrity | Passed; every file listed in the release checksum manifest verified | Run #113 |
+| Versioned release artifact | Uploaded as `JoyLauncher-Release-Windows-x64`; expires 15 December 2026 | [Run #113](https://github.com/malek679599/JoyLauncher1/actions/runs/43770531865) |
+| Library sorting | Passed; name, category, recent, favorites-first, pinned-first, and invalid-mode fallback | `AppLibrarySorterTests.cs`, run #113 |
+| App metadata resolution | Passed; known package mapping and unknown-package humanization | `AppMetadataCatalogTests.cs`, run #113 |
+| Sort and preference persistence | Passed; roundtrip, legacy settings, invalid sort normalization, and local preference defaults | `LocalPreferencesStoreTests.cs`, run #113 |
+| Android crash-log filtering | Passed; Java/native package filtering, no-match behavior, and output cap | `AndroidCrashLogParserTests.cs`, run #113 |
 | ADB endpoint connection and package enumeration | User-confirmed working locally | User report, 14 Nov 2026 |
 | ADB app launch to separate BlueStacks player | User-confirmed working; not embedded | User report, 14 Nov 2026 |
 | Actual BlueStacks connection | User-confirmed working | User report, 14 Nov 2026 |
-| In-launcher BlueStacks child-window hosting | Experimental guarded `SetParent` implementation; not yet locally tested | `ExternalWindowHost.cs`, `BlueStacksWindowLocator.cs` |
+| In-launcher BlueStacks child-window hosting | Guarded experimental implementation exists; not yet locally validated | `ExternalWindowHost.cs`, `BlueStacksWindowLocator.cs` |
 | Target-laptop startup, navigation, and package installation | Not yet confirmed on the user's ThinkPad | Hosted CI does not replace target-machine validation |
 | Keyboard and XInput controller behavior | Implemented; target-machine verification pending | `Window_PreviewKeyDown`, `XInputGamepadService.cs` |
 
-Run #112 passed on commit `79a0d78c1131ca0c425e8afd8b3c6963c651dc52` with 0 compiler warnings, 0 errors, all 17 tests, self-contained Windows x64 publishing, an 8-second startup smoke test, installer compilation, per-user install/uninstall smoke tests, portable package generation, and release checksum verification. The tag-triggered GitHub Release step was skipped because the run was for `main`, not a version tag. The artifact is retained for 30 days and expires 15 December 2026.
+Run #113 passed on commit `966b311e20f64a522abc45961e63836fafa6c8f2`: 0 compiler warnings, 0 errors, all 24 tests, self-contained Windows x64 publishing, an 8-second startup smoke test, installer compilation, per-user install/uninstall smoke tests, portable package generation, and release checksum verification. The tag-triggered GitHub Release step was skipped because the run was for `main`, not a version tag. The uploaded artifact expires 15 December 2026.
 
-Hosted Windows checks do not prove that JoyLauncher works on the user's ThinkPad, that BlueStacks embeds successfully, or that the earlier user-reported crash is resolved. Those remain explicit manual release gates.
+Hosted Windows checks do not prove that JoyLauncher works on the user's ThinkPad, that BlueStacks embeds successfully, or that the earlier Minecraft crash is resolved. Those remain explicit manual validation gates.
+
 ## Test matrix
 
 | Area | Test | Expected result |
@@ -102,14 +104,14 @@ When Minecraft is installed on the connected BlueStacks instance, Settings also 
 8. Launch one known installed package from its verified card and confirm it opens in BlueStacks.
 9. If Minecraft closes unexpectedly, open Settings and use **Copy recent Minecraft crash summary**; confirm the summary identifies the Minecraft package or clearly reports that no matching crash was found.
 9. Confirm the player becomes a child window inside JoyLauncher, not a separate overlay.
-10. Check Settings diagnostics for matching DPI-awareness contexts; if they differ, confirm JoyLauncher refuses attachment and leaves BlueStacks unchanged.
-11. Click Back to JoyLauncher and confirm the standalone player window is restored with its original style and size.
-12. Resize JoyLauncher, press F11, and test keyboard/mouse input in the embedded game.
-13. Check that known publisher favicons load while online and initials remain when offline.
-14. Repeat with BlueStacks closed or ADB disabled and verify useful error states.
-15. Change the Library sort order, favorite and pin an app, close/reopen JoyLauncher, and verify all preferences persisted.
-16. Search the Library by friendly name and package ID, then test each sort mode and category filter.
-17. Install the versioned per-user installer, start JoyLauncher, uninstall it, and confirm the app is removed. The hosted CI already smoke-tests install/uninstall; this step confirms the target laptop.
+11. Check Settings diagnostics for matching DPI-awareness contexts; if they differ, confirm JoyLauncher refuses attachment and leaves BlueStacks unchanged.
+12. Click Back to JoyLauncher and confirm the standalone player window is restored with its original style and size.
+13. Resize JoyLauncher, press F11, and test keyboard/mouse input in the embedded game.
+14. Check that known publisher favicons load while online and initials remain when offline.
+15. Repeat with BlueStacks closed or ADB disabled and verify useful error states.
+16. Change the Library sort order, favorite and pin an app, close/reopen JoyLauncher, and verify all preferences persisted.
+17. Search the Library by friendly name and package ID, then test each sort mode and category filter.
+18. Install the versioned per-user installer, start JoyLauncher, uninstall it, and confirm the app is removed. The hosted CI already smoke-tests install/uninstall; this step confirms the target laptop.
 
 ## Evidence required
 
