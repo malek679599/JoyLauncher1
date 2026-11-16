@@ -29,7 +29,7 @@ The first prototype keeps the code in one WPF project to reduce build friction. 
 ## Technology
 
 - C# / WPF on .NET 10.
-- System.Text.Json is planned for local preferences.
+- System.Text.Json stores local preferences in the current Windows user's app-data directory.
 - .NET process and registry APIs for read-only Windows discovery.
 - ADB invoked through ProcessStartInfo.ArgumentList, never through a concatenated shell command.
 - Async process waits, bounded timeouts, captured stdout/stderr, and process cleanup on timeout.
@@ -60,7 +60,7 @@ For a selected discovered instance, `AdbClient`:
 4. Parses package identifiers and deduplicates them.
 5. Returns explicit errors and timeout results instead of reporting false success.
 
-The first live Library view displays verified package identifiers. Friendly labels, icons, and category classification are not implemented yet.
+The live Library displays package identifiers returned by ADB, resolves a growing catalog of friendly labels and categories, and uses publisher website favicons for a limited known-package set. Unknown packages retain their full identifier and receive a humanized fallback label.
 
 ## App launch
 
