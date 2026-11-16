@@ -103,7 +103,7 @@ When Minecraft is installed on the connected BlueStacks instance, Settings also 
 7. Open Library and confirm package identifiers appear.
 8. Launch one known installed package from its verified card and confirm it opens in BlueStacks.
 9. If Minecraft closes unexpectedly, open Settings and use **Copy recent Minecraft crash summary**; confirm the summary identifies the Minecraft package or clearly reports that no matching crash was found.
-9. Confirm the player becomes a child window inside JoyLauncher, not a separate overlay.
+10. Confirm the player becomes a child window inside JoyLauncher, not a separate overlay.
 11. Check Settings diagnostics for matching DPI-awareness contexts; if they differ, confirm JoyLauncher refuses attachment and leaves BlueStacks unchanged.
 12. Click Back to JoyLauncher and confirm the standalone player window is restored with its original style and size.
 13. Resize JoyLauncher, press F11, and test keyboard/mouse input in the embedded game.
