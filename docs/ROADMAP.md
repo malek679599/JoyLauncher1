@@ -14,9 +14,9 @@
 - [x] Build Library, Games, Entertainment, Search, Store placeholder, and Settings views.
 - [x] Add sample-data labels and honest runtime-pending messages.
 - [x] Add Escape-to-Home behavior from secondary pages.
-- [ ] Add full keyboard/gamepad focus navigation.
-- [ ] Add fullscreen startup and display-size refinements.
-- [ ] Add local theme and settings persistence.
+- [x] Add directional keyboard focus navigation and XInput controller navigation.
+- [x] Add F11 fullscreen, Big Picture mode, and controller/keyboard fullscreen controls.
+- [x] Persist local favorites, pins, recent launches, sort preference, and experimental-embedding preference.
 
 ## Phase 2 — Art and design system
 - [x] Define the initial dark navy/blue color, spacing, radius, and typography tokens.
@@ -37,7 +37,7 @@
 - [x] Add launch requests for packages returned by the live ADB query.
 - [x] Add bounded ADB command timeouts and process cleanup.
 - [x] Add user-triggered, package-filtered Android crash summaries for Minecraft without clearing, saving, or uploading raw logcat data.
-- [ ] Complete guarded cross-process child-window hosting with DPI-awareness preflight and a verified restore path when leaving Play.
+- [x] Implement guarded cross-process child-window hosting with DPI-awareness preflight, diagnostics, and a restore path when leaving Play (target-machine validation remains open).
 - [ ] Validate actual child-window rendering, input, resizing, fullscreen, DPI behavior, and window restoration on the user's BlueStacks setup.
 - [ ] Add user-configurable fallback paths.
 - [x] Test discovery and ADB connection against the user's BlueStacks installation (user-confirmed).
@@ -53,21 +53,21 @@
 - [x] Add publisher website favicons for the initial known-package set.
 - [x] Filter package results to normal launcher activities when the Android runtime supports it.
 - [ ] Resolve remaining app names and higher-quality app-specific icons.
-- [ ] Search, sort, pin, favourite, and filter discovered apps.
-- [ ] Add recent-app tracking where reliable.
+- [x] Search, sort, pin, favourite, and filter discovered apps.
+- [x] Track recent launch requests locally and sort by recency (ADB acceptance is not proof that the app stayed open).
 - [ ] Match Minecraft to the correct verified package without relying on an unverified guess.
-- [ ] Add app details and runtime launch feedback.
+- [x] Show launch-command acceptance/failure separately from embedding status; full app-details view remains open.
 
 ## Phase 5 — Quality and release
 - [x] Add a Windows GitHub Actions Release build workflow.
-- [x] Verify Windows CI Release build and self-contained publish including embedded-play and website-favicon code (run #54, commit `1e6fe5c`).
-- [ ] Run a Release build on the user's Windows machine.
+- [x] Verify Windows CI Release build, tests, self-contained publish, startup, installer lifecycle, portable ZIP, and checksums (run #113, commit `966b311`).
+- [ ] Run a Release build and install the artifact on the user's Windows machine.
 - [x] Verify local ADB connection and an app launch to the separate BlueStacks window (user-confirmed).
 - [ ] Validate in-launcher embedding and full input/restore behavior.
 - [ ] Test keyboard navigation and failure recovery.
-- [ ] Add automated tests for runtime discovery, package metadata, and launchability.
-- [ ] Package a versioned Windows build.
-- [ ] Publish release notes and known limitations.
+- [x] Add automated tests for package metadata, sorting, preferences, diagnostics, and focus coordination.\n- [ ] Add direct automated tests for BlueStacks discovery parsing and ADB package/launchability output.
+- [x] Generate versioned per-user installer and portable ZIP artifacts in CI.
+- [x] Generate release notes and build/checksum metadata with each CI artifact; tag-based public release still requires a version tag.
 
 ## Working rules
 
@@ -78,7 +78,7 @@
 - Prefer reversible changes and preserve the user's existing BlueStacks setup.
 - No paid APIs, subscriptions, or paid assets.
 
-## Current boundaries
+## Current status (16 November 2026)\n\n- Latest source: `966b311e20f64a522abc45961e63836fafa6c8f2`.\n- Latest hosted Windows CI: [run #113](https://github.com/malek679599/JoyLauncher1/actions/runs/43770531865), successful; 24/24 tests, 0 build warnings, 0 build errors, self-contained publish, startup smoke test, installer install/uninstall, portable package, and checksum verification.\n- The CI artifact is available until 15 December 2026.\n- Still unverified on the target laptop: Minecraft crash cause/resolution, keyboard/gamepad behavior, Big Picture navigation, and true BlueStacks window hosting/input/restore.\n\n## Current boundaries
 
 - Before a successful ADB query, the Home view uses clearly labelled preview content. After connection, app cards are based on package IDs returned by the selected BlueStacks instance.
 - The featured Minecraft action is enabled only when the exact Minecraft package ID is present in that live package list.
